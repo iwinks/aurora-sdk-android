@@ -121,6 +121,20 @@ public class DreambandBLEService extends Service {
     public static IntentFilter makeNxtMobileIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(DreambandResp.RESP_DEVICE_CONNECTED);
+        intentFilter.addAction(DreambandResp.RESP_DEVICE_NAME);
+        intentFilter.addAction(DreambandResp.RESP_DEVICE_ADDRESS);
+        intentFilter.addAction(DreambandResp.RESP_DEVICE_DISCONNECTED);
+
+        intentFilter.addAction(DreambandResp.RESP_UNSYNCED_SESSION_COUNT);
+        intentFilter.addAction(DreambandResp.RESP_RENAME_SYNCED_SESSION);
+        intentFilter.addAction(DreambandResp.RESP_REMOVE_EMPTY_SESSION);
+        intentFilter.addAction(DreambandResp.RESP_OS_VERSION);
+        intentFilter.addAction(DreambandResp.RESP_BATTERY_LEVEL);
+        intentFilter.addAction(DreambandResp.RESP_IS_PROFILE_LOADED);
+        intentFilter.addAction(DreambandResp.RESP_SHUTDOWN);
+        intentFilter.addAction(DreambandResp.RESP_OBSERVE_EVENTS);
+        intentFilter.addAction(DreambandResp.RESP_HELP);
+        intentFilter.addAction(DreambandResp.RESP_BUZZ);
         return intentFilter;
     }
 
