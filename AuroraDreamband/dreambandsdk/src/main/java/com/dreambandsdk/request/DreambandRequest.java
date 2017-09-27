@@ -16,7 +16,7 @@ import java.util.List;
 public abstract class DreambandRequest {
 
     // Private members
-    enum ResponseType {STRING_RESP, TABLE_RESP}
+    enum ResponseType {STRING_RESP, TABLE_RESP, OBJECT_RESP}
     protected ResponseType _respType;
     protected byte[] _reqData, _extraReqData;
     protected Intent _intent;

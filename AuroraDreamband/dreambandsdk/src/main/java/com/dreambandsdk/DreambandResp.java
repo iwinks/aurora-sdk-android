@@ -19,6 +19,15 @@ public class DreambandResp {
     // Notifications from public API methods
     public final static String RESP_TABLE_SIZE = "com.dreambandsdk.RESP_TABLE_SIZE";
     public final static String RESP_UNSYNCED_SESSION_COUNT = "com.dreambandsdk.RESP_UNSYNCED_SESSION_COUNT";
+    public final static String RESP_RENAME_SYNCED_SESSION = "com.dreambandsdk.RESP_RENAME_SYNCED_SESSION";
+    public final static String RESP_REMOVE_EMPTY_SESSION = "com.dreambandsdk.RESP_REMOVE_EMPTY_SESSION";
+    public final static String RESP_OS_VERSION = "com.dreambandsdk.RESP_OS_VERSION";
+    public final static String RESP_BATTERY_LEVEL = "com.dreambandsdk.RESP_BATTERY_LEVEL";
+    public final static String RESP_IS_PROFILE_LOADED = "com.dreambandsdk.RESP_IS_PROFILE_LOADED";
+    public final static String RESP_SHUTDOWN = "com.dreambandsdk.RESP_SHUTDOWN";
+    public final static String RESP_OBSERVE_EVENTS = "com.dreambandsdk.RESP_OBSERVE_EVENTS";
+    public final static String RESP_HELP = "com.dreambandsdk.RESP_HELP";
+    public final static String RESP_BUZZ = "com.dreambandsdk.RESP_BUZZ";
 
 
 

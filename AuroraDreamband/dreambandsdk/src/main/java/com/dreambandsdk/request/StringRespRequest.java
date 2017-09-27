@@ -19,7 +19,8 @@ public class StringRespRequest extends DreambandRequest {
 
     @Override
     public byte[] getRequestData() {
-        return new byte[0];
+        _reqData = _request.getBytes(Charset.forName("UTF-8"));
+        return _reqData;
     }
 
     @Override

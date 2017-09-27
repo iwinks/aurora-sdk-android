@@ -76,7 +76,7 @@ public enum DreambandEvent
      * @param eventsValue event ids
      * @return EnumSet representing DreambandEvent ids
      */
-    public EnumSet<DreambandEvent> getEventIds(int eventsValue) {
+    public static EnumSet<DreambandEvent> getEventIds(int eventsValue) {
         EnumSet statusFlags = EnumSet.noneOf(DreambandEvent.class);
         for (DreambandEvent event : DreambandEvent.values())
         {
@@ -94,7 +94,7 @@ public enum DreambandEvent
      * @param events Set of DreambandEvents
      * @return numeric representation of the DreambandEvent ids
      */
-    public int getEventIdsValue(Set<DreambandEvent> events) {
+    public static int getEventIdsValue(Set<DreambandEvent> events) {
         int value=0;
         for (DreambandEvent event : events)
         {

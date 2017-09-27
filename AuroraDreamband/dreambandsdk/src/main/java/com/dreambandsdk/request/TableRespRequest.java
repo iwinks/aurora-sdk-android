@@ -28,7 +28,8 @@ public class TableRespRequest extends DreambandRequest {
 
     @Override
     public byte[] getRequestData() {
-        return new byte[0];
+        _reqData = _request.getBytes(Charset.forName("UTF-8"));
+        return _reqData;
     }
 
     @Override
@@ -44,7 +45,7 @@ public class TableRespRequest extends DreambandRequest {
     @Override
     public Intent handleComplete() {
 
-        // After complete break the responseString up be '\n' characters and broadcast result
+        // After complete break the responseString up into HashMap and broadcast result
         String headerStr = _responseString.get(0);
         String[] headerRow = headerStr.split(Pattern.quote("|"));
         _responseTable = new HashMap<String, String>();

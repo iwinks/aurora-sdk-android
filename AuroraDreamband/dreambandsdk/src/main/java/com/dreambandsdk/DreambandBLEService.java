@@ -23,11 +23,14 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.dreambandsdk.request.DreambandRequest;
+import com.dreambandsdk.request.ObjectRespRequest;
+import com.dreambandsdk.request.StringRespRequest;
 import com.dreambandsdk.request.TableRespRequest;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -311,16 +314,6 @@ public class DreambandBLEService extends Service {
         char_props.setSupports_notify(true);
         _characteristicProperties.add(char_props);
     }
-
-    /**** Public Dreamband Service Methods ***********/
-    public boolean unsyncedSessionCount()
-    {
-        // Add the command to the queue and return true for success, false otherwise
-        // Results will be broadcasted after they are received
-        return issueQueueRequest(new TableRespRequest("sd-dir-read sessions 0 *@*", DreambandResp.RESP_UNSYNCED_SESSION_COUNT))
-                == DreambandResp.ErrorCode.SUCCESS;
-    }
-
 
     /********* Internal Dreamband Service methods ***********/
     // Reads a characteristic UUID from _notificationUUIDs queue and enables the BLE notification
@@ -782,6 +775,7 @@ public class DreambandBLEService extends Service {
         int eventId = data[0];
         long flags = Utility.getUnsignedInt32(data, 1);
         DreambandEvent event = DreambandEvent.fromValue(eventId);
+        Log.d(TAG, "Event data: " + event + " flags = " + flags);
 
         // Notify event
         Intent intent = new Intent(DreambandResp.EVENT);
@@ -805,4 +799,150 @@ public class DreambandBLEService extends Service {
         intent.putExtra(DreambandResp.RESP_DEVICE_ADDRESS, _deviceAddress);
         broadcast(intent);
     }
+
+    /**** Public Dreamband Service Methods ***********/
+
+    // Returns the number of unsynced sessions in the Aurora.
+    public boolean unsyncedSessionCount()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        return issueQueueRequest(new TableRespRequest("sd-dir-read sessions 0 *@*", DreambandResp.RESP_UNSYNCED_SESSION_COUNT))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Renames the session specified from Aurora
+
+     - parameter id:         session id received by the rest API after syncing the session
+     - parameter name:       name of the session in the Aurora file system
+     - completion: broadcasts DreambandResp.RESP_RENAME_SYNCED_SESSION notification upon completion
+     */
+    public boolean renameSyncedSession(String id, String name)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "sd-rename sessions/" + name +  " sessions/" + id;
+        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_RENAME_SYNCED_SESSION))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Removes the session specified from Aurora
+
+     - parameter name:       name of the session in the Aurora file system
+     - completion: broadcasts DreambandResp.RESP_REMOVE_EMPTY_SESSION notification upon completion
+     */
+    public boolean removeEmptySession(String name)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "sd-dir-del sessions/" + name;
+        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_REMOVE_EMPTY_SESSION))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Retrieves OS version from Aurora
+
+     - completion: broadcasts DreambandResp.RESP_OS_VERSION notification upon completion
+     */
+    public boolean osVersion()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "os-info";
+        return issueQueueRequest(new ObjectRespRequest(command, DreambandResp.RESP_OS_VERSION))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Retrieves battery level from Aurora
+
+     - completion: broadcasts DreambandResp.RESP_BATTERY_LEVEL notification upon completion
+     */
+    public boolean batteryLevel()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "os-info";
+        return issueQueueRequest(new ObjectRespRequest(command, DreambandResp.RESP_BATTERY_LEVEL))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Retrieves if the profile is loaded from Aurora
+
+     - completion: broadcasts DreambandResp.RESP_IS_PROFILE_LOADED notification upon completion
+     */
+    public boolean isProfileLoaded()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "os-info";
+        return issueQueueRequest(new ObjectRespRequest(command, DreambandResp.RESP_IS_PROFILE_LOADED))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Shuts down the Aurora
+
+     - completion: broadcasts DreambandResp.RESP_SHUTDOWN notification upon completion
+     */
+    public boolean shutdown()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "os-shutdown";
+        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_SHUTDOWN))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Starts observing events from the Aurora
+
+     Events will be broadcasted as EVENT notifications as they are received from the Aurora
+     - completion: broadcasts DreambandResp.RESP_OBSERVE_EVENTS notification upon completion
+     */
+    public boolean observeEvents(EnumSet<DreambandEvent> eventsToObserve)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        int eventIds = DreambandEvent.getEventIdsValue(eventsToObserve);
+        String command = "event-output-enable " + eventIds + " 16";
+        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_OBSERVE_EVENTS))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Retrieves help info from the Aurora
+
+     - completion: broadcasts DreambandResp.RESP_HELP notification upon completion
+     */
+    public boolean help()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "help";
+        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_HELP))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    /**
+     Buzzes the note for duration on the Aurora
+
+     - completion: broadcasts DreambandResp.RESP_BUZZ notification upon completion
+     */
+    public boolean buzz(int note, int duration)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "buzz-note " + note + " " + duration;
+        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_BUZZ))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+
+
+
 }
