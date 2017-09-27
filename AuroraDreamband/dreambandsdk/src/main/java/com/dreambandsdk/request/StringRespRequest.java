@@ -42,6 +42,7 @@ public class StringRespRequest extends DreambandRequest {
         }
 
         _intent = new Intent(_respNotification);
+        _intent.putExtra(DreambandResp.RESP_VALID, true);
         _intent.putExtra(_respNotification, sb.toString());
 
         return _intent;

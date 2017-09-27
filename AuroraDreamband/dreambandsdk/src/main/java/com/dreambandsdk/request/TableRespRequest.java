@@ -62,6 +62,7 @@ public class TableRespRequest extends DreambandRequest {
         }
 
         _intent = new Intent(_respNotification);
+        _intent.putExtra(DreambandResp.RESP_VALID, true);
         _intent.putExtra(_respNotification, _responseTable);
         _intent.putExtra(DreambandResp.RESP_TABLE_SIZE, _responseTable.size());
 

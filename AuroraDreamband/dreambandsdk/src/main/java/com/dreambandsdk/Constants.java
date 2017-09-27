@@ -33,7 +33,7 @@ public class Constants {
         INPUT_REQUESTED((byte)4);
 
         private final byte _cmdState;
-        private CommandState(byte stateValue)
+        CommandState(byte stateValue)
         {
             _cmdState = stateValue;
         }
@@ -41,7 +41,15 @@ public class Constants {
         public byte value() { return _cmdState; }
         public static CommandState fromValue(byte stateValue)
         {
-            return CommandState.values()[stateValue];
+            CommandState resp = null;
+            for (CommandState state : CommandState.values())
+            {
+                int flagValue = state.value();
+                if (flagValue == stateValue) {
+                    resp = state;
+                }
+            }
+            return resp;
         }
     }
 }

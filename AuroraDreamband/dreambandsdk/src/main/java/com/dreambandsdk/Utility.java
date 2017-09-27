@@ -157,8 +157,8 @@ public class Utility {
         return  ((short)((value[3] << 24) | (value[2] << 16) | (value[1] << 8) | (value[0] & 0xFF)));
     }
 
-    public static long getUnsignedInt32(byte[] bytes) {
-        return ((bytes[0] & 0xFF) << 24) | ((bytes[1] & 0xFF) << 16) | ((bytes[2] & 0xFF) << 8) | (bytes[3] & 0xFF);
+    public static long getUnsignedInt32(byte[] bytes, int offset) {
+        return ((bytes[offset] & 0xFF) << 24) | ((bytes[offset+1] & 0xFF) << 16) | ((bytes[offset+2] & 0xFF) << 8) | (bytes[offset+3] & 0xFF);
     }
 
     public static void writeStringPadded(ByteBuffer buffer, String value, int len) {

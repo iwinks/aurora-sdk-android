@@ -22,6 +22,9 @@ public class DreambandResp {
 
 
 
+    // Event Notifications
+    public final static String EVENT = "com.dreambandsdk.EVENT";
+    public final static String EVENT_FLAGS = "com.dreambandsdk.EVENT_FLAGS";
 
 
 }

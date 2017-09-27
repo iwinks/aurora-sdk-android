@@ -775,14 +775,20 @@ public class DreambandBLEService extends Service {
     }
 
     // Event data received
-    private void eventHandler(byte[] charData)
+    private void eventHandler(byte[] data)
     {
         Log.i(TAG, "eventHandler()");
         // Parse event data
-
+        int eventId = data[0];
+        long flags = Utility.getUnsignedInt32(data, 1);
+        DreambandEvent event = DreambandEvent.fromValue(eventId);
 
         // Notify event
-
+        Intent intent = new Intent(DreambandResp.EVENT);
+        intent.putExtra(DreambandResp.RESP_VALID, true);
+        intent.putExtra(DreambandResp.EVENT, event);
+        intent.putExtra(DreambandResp.EVENT_FLAGS, flags);
+        broadcast(intent);
     }
 
     // Stream data received
