@@ -1,10 +1,16 @@
 package com.auroradreamband;
 
+import android.Manifest;
+import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -15,14 +21,19 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.dreambandsdk.DreambandBLEService;
 import com.dreambandsdk.DreambandResp;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SDKExampleActivity extends AppCompatActivity {
     private final static String TAG = SDKExampleActivity.class.getSimpleName();
+    private final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
 
     private DreambandBLEService _dreambandServices;
     private boolean _serviceBound = false;
@@ -37,6 +48,16 @@ public class SDKExampleActivity extends AppCompatActivity {
 
         txt_status = (TextView) findViewById(R.id.statusTextView);
         prgs_bleActive = (ProgressBar) findViewById(R.id.progressBarBleActive);
+        if (Build.VERSION.SDK_INT >= 23) {
+            // Marshmallow+ Permission APIs
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                final List<String> permissionsList = new ArrayList<String>();
+                permissionsList.add(Manifest.permission.ACCESS_FINE_LOCATION);
+
+                requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
+                        REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+            }
+        }
     }
 
     @Override
@@ -49,9 +70,12 @@ public class SDKExampleActivity extends AppCompatActivity {
         startService(intent);
         bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
 
-        // The service will autoconnect to the device.
-        // Start the BLE progress indicator while we wait for a result
-        prgs_bleActive.setVisibility(View.VISIBLE);
+        if (DreambandBLEService.SCAN_ON_START) {
+            // The service will autoconnect to the device.
+            // Start the BLE progress indicator while we wait for a result
+            showMsg("Searching for dreamband...");
+            prgs_bleActive.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -100,8 +124,69 @@ public class SDKExampleActivity extends AppCompatActivity {
         txt_status.setText(msg);
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS: {
+                Map<String, Integer> perms = new HashMap<String, Integer>();
+                // Initial
+                perms.put(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+
+
+                // Fill with results
+                for (int i = 0; i < permissions.length; i++)
+                    perms.put(permissions[i], grantResults[i]);
+
+                // Check for ACCESS_FINE_LOCATION
+                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+                        ) {
+                    // All Permissions Granted
+                    Toast.makeText(SDKExampleActivity.this, "All permissions granted, launching App.", Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    // Permission Denied
+                    Toast.makeText(SDKExampleActivity.this, "One or more permissions denied, exiting App.", Toast.LENGTH_SHORT)
+                            .show();
+
+                    finish();
+                }
+            }
+            break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(SDKExampleActivity.this)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show();
+    }
 
     // ********* Button Handlers ********** //
+    public void onConnect(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Searching for dreamband...");
+            _dreambandServices.connect();
+        }
+    }
+
+    public void onDisconnect(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Disconnecting from dreamband...");
+            _dreambandServices.disconnect();
+        }
+    }
+
     public void onGetUnsyncedSessionCount(View v)
     {
         if (_dreambandServices != null) {
@@ -122,7 +207,7 @@ public class SDKExampleActivity extends AppCompatActivity {
                 new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        showMsg("Device Connected.");
+                        showMsg("Dreamband Connected.");
                         prgs_bleActive.setVisibility(View.INVISIBLE);
                     }
                 }, 100);
@@ -131,8 +216,8 @@ public class SDKExampleActivity extends AppCompatActivity {
                 new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        showMsg("Device Disconnected. Searching for device...");
-                        prgs_bleActive.setVisibility(View.VISIBLE);
+                        showMsg("Dreamband Disconnected.");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
                     }
                 }, 100);
             }

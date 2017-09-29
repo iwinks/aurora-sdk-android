@@ -51,6 +51,8 @@ public class DreambandBLEService extends Service {
     public static final String  EXTRA_NAME = "name";
     public static final String  EXTRA_ADDRESS = "address";
 
+    public static final boolean SCAN_ON_START = false;
+
     /*************** Data Fields **********************/
     enum BleState {IDLE, WAIT_REQUEST_RESP, DATA_TX, CMD_DATA_TX, STATUS_CMD_START, STATUS_CMD_END}
     enum ConnectionState {DISCONNECTED, CONNECTING, CONNECTED, SEARCHING}
@@ -181,9 +183,10 @@ public class DreambandBLEService extends Service {
                 else if (_connectionState == ConnectionState.DISCONNECTED)
                 {
                     // Search for dreamband for reconnection
-                    Log.d(TAG, "Searching for device: " + _deviceAddress);
+                    // TODO: Handle scan on disconnect
+                    /*Log.d(TAG, "Searching for device: " + _deviceAddress);
                     scanLeDevice(true);
-                    _connectionState = ConnectionState.SEARCHING;
+                    _connectionState = ConnectionState.SEARCHING;*/
                 }
                 else if (_connectionState == ConnectionState.SEARCHING)
                 {
@@ -280,10 +283,14 @@ public class DreambandBLEService extends Service {
         _deviceName = intent.getStringExtra(EXTRA_NAME);
         _deviceAddress = intent.getStringExtra(EXTRA_ADDRESS);
 
-        if (_deviceAddress.isEmpty()) {
-            // Start scanning for the dreamband
-            Log.d(TAG, "Scanning for dreamband device");
-            scanLeDevice(true);
+        if (_deviceAddress == null || _deviceAddress.isEmpty()) {
+            _deviceAddress = "";
+            _deviceName = "";
+            if (SCAN_ON_START) {
+                // Start scanning for the dreamband
+                Log.d(TAG, "Scanning for dreamband device");
+                scanLeDevice(true);
+            }
         } else {
             // Connect by addresss
             if (!_bluetoothLeService.connect(_deviceAddress)) {
@@ -416,7 +423,7 @@ public class DreambandBLEService extends Service {
             filters.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(Utility.normaliseUUID(Constants.DREAMBAND_SERVICE_UUID))).build());
             // before starting scan check bt status
             if (_bluetoothState == BluetoothAdapter.STATE_ON) {
-                scanner.startScan(null, settings, mNordicLeScanCallback);
+                scanner.startScan(filters, settings, mNordicLeScanCallback);
             }
         } else {
             _scanning = false;
@@ -434,20 +441,24 @@ public class DreambandBLEService extends Service {
 
                 _deviceName = result.getDevice().getName();
                 _deviceAddress = result.getDevice().getAddress();
-                scanLeDevice(false);
-                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Connect to the device and stop scanning
-                        if (_bluetoothLeService != null) {
-                            if (!_bluetoothLeService.connect(_deviceAddress)) {
-                                Log.d(TAG, "onConnect: failed to connect");
+                if (_deviceName != null && !_deviceName.isEmpty() &&
+                    _deviceAddress != null && !_deviceAddress.isEmpty() && _deviceAddress.length() > 4) {
+                    scanLeDevice(false);
+                    _connectionState = ConnectionState.CONNECTING;
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Connect to the device and stop scanning
+                            if (_bluetoothLeService != null) {
+                                if (!_bluetoothLeService.connect(_deviceAddress)) {
+                                    Log.d(TAG, "onConnect: failed to connect");
+                                }
+                            } else {
+                                Log.d(TAG, "onConnect: _bluetoothLeService=null");
                             }
-                        } else {
-                            Log.d(TAG, "onConnect: _bluetoothLeService=null");
                         }
-                        }
-                }, 100);
+                    }, 100);
+                }
             }
 
             @Override
@@ -621,8 +632,7 @@ public class DreambandBLEService extends Service {
                         bundle = msg.getData();
                         service_uuid = bundle.getString(BleAdapterService.PARCEL_SERVICE_UUID);
                         characteristic_uuid = bundle.getString(BleAdapterService.PARCEL_CHARACTERISTIC_UUID);
-
-                        if (characteristic_uuid.equalsIgnoreCase(Constants.COMMAND_DATA_UUID))
+                        if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_DATA_UUID)))
                         {
                             if (_bleState == BleState.DATA_TX) {
                                 // There is more data to send
@@ -636,7 +646,7 @@ public class DreambandBLEService extends Service {
                                 sendCommandStatusData(cmdBytes);
                             }
                         }
-                        else if (characteristic_uuid.equalsIgnoreCase(Constants.COMMAND_STATUS_UUID)) {
+                        else if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_STATUS_UUID))) {
                             if (_bleState == BleState.STATUS_CMD_START) {
                                 // Finished sending the status byte indicating start of command
                                 // Start sending the ascii command data
@@ -675,19 +685,19 @@ public class DreambandBLEService extends Service {
                         Log.d(TAG, "Value=" + Utility.byteArrayAsHexString(b));
 
                         // Determine which characteristic was written and handle appropriately
-                        if (characteristic_uuid.equalsIgnoreCase(Constants.COMMAND_OUTPUT_INDICATED_UUID) ||
-                            characteristic_uuid.equalsIgnoreCase(Constants.COMMAND_OUTPUT_NOTIFIED_UUID))
+                        if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_OUTPUT_INDICATED_UUID)) ||
+                            characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_OUTPUT_NOTIFIED_UUID)))
                         {
                             commandOutputHandler(b);
-                        } else if (characteristic_uuid.equalsIgnoreCase(Constants.COMMAND_STATUS_UUID))
+                        } else if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_STATUS_UUID)))
                         {
                             commandStatusHandler(b);
-                        } else if (characteristic_uuid.equalsIgnoreCase(Constants.EVENT_INDICATED_UUID) ||
-                                   characteristic_uuid.equalsIgnoreCase(Constants.EVENT_NOTIFIED_UUID))
+                        } else if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.EVENT_INDICATED_UUID)) ||
+                                   characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.EVENT_NOTIFIED_UUID)))
                         {
                             eventHandler(b);
-                        } else if (characteristic_uuid.equalsIgnoreCase(Constants.STREAM_DATA_INDICATED_UUID) ||
-                                   characteristic_uuid.equalsIgnoreCase(Constants.STREAM_DATA_NOTIFIED_UUID))
+                        } else if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.STREAM_DATA_INDICATED_UUID)) ||
+                                   characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.STREAM_DATA_NOTIFIED_UUID)))
                         {
                             streamDataHandler(b);
                         }
@@ -703,6 +713,7 @@ public class DreambandBLEService extends Service {
                 }
             }
             catch(Exception e){
+                e.printStackTrace();
                 Log.d(TAG, "onConnect: failed to connect");
             }
         }
@@ -815,6 +826,29 @@ public class DreambandBLEService extends Service {
     }
 
     /**** Public Dreamband Service Methods ***********/
+
+    // Starts searching for the dreamband device to connect to
+    public boolean connect()
+    {
+        if (_connectionState != ConnectionState.CONNECTED)
+        {
+            scanLeDevice(true);
+        }
+        return true;
+    }
+
+    // Disconnects and stops scanning for the dreamband device
+    public boolean disconnect()
+    {
+        if (_connectionState != ConnectionState.DISCONNECTED)
+        {
+            if (_bluetoothLeService != null)
+                _bluetoothLeService.disconnect();
+        }
+        if (_scanning)
+            scanLeDevice(false);
+        return true;
+    }
 
     // Returns the number of unsynced sessions in the Aurora.
     public boolean unsyncedSessionCount()

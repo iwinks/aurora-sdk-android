@@ -21,7 +21,7 @@ public class Constants {
     public static final String COMMAND_OUTPUT_INDICATED_UUID = "6175726f726149ce8077b954b033c882";
     public static final String COMMAND_OUTPUT_NOTIFIED_UUID = "6175726f726149ce8077b954b033c883";
     public static final String STREAM_DATA_INDICATED_UUID = "6175726f726149ce8077b954b033c890";
-    public static final String STREAM_DATA_NOTIFIED_UUID = "6175726f726149c8077b954b033c891";
+    public static final String STREAM_DATA_NOTIFIED_UUID =  "6175726f726149ce8077b954b033c891";
 
 
     enum CommandState
