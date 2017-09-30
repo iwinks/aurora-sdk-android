@@ -50,7 +50,7 @@ public class ObjectRespRequest extends DreambandRequest {
             String rowStr = _responseString.get(i);
             String[] cols = rowStr.split(Pattern.quote(" : "));
             for (int j = 0; j < cols.length; j++) {
-                cols[i] = cols[i].trim();
+                cols[j] = cols[j].trim();
             }
             if (cols.length < 2)
             {
@@ -64,9 +64,8 @@ public class ObjectRespRequest extends DreambandRequest {
         try {
             if (_respNotification.equalsIgnoreCase(DreambandResp.RESP_OS_VERSION)) {
                 // Parse OS version out of table
-                String version = _responseTable.get("Version");
-                int ver = version.equalsIgnoreCase("1.4.2") ? 10402 : 10401;
-                _intent.putExtra(_respNotification, ver);
+                int version = Integer.parseInt(_responseTable.get("Version"));
+                _intent.putExtra(_respNotification, version);
             }
             else if (_respNotification.equalsIgnoreCase(DreambandResp.RESP_BATTERY_LEVEL)) {
                 // Parse battery level out of table

@@ -52,7 +52,7 @@ public class TableRespRequest extends DreambandRequest {
         for (int i = 0; i < headerRow.length; i++) {
             headerRow[i] = headerRow[i].trim();
         }
-        for (int i = 1; i <= _responseString.size(); i++)
+        for (int i = 1; i < _responseString.size(); i++)
         {
             String rowStr = _responseString.get(i);
             String[] cols = rowStr.split(Pattern.quote("|"));

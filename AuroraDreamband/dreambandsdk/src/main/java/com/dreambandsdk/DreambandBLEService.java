@@ -314,24 +314,26 @@ public class DreambandBLEService extends Service {
         char_props = new CharacteristicProperties(Constants.DREAMBAND_SERVICE_UUID, Constants.COMMAND_STATUS_UUID);
         char_props.setSupports_read(true);
         char_props.setSupports_write(true);
-        char_props.setSupports_notify(true);
+        char_props.setSupports_indicate(true);
         _characteristicProperties.add(char_props);
 
         char_props = new CharacteristicProperties(Constants.DREAMBAND_SERVICE_UUID, Constants.EVENT_NOTIFIED_UUID);
         char_props.setSupports_read(true);
-        char_props.setSupports_write(true);
         char_props.setSupports_notify(true);
         _characteristicProperties.add(char_props);
 
         char_props = new CharacteristicProperties(Constants.DREAMBAND_SERVICE_UUID, Constants.COMMAND_OUTPUT_NOTIFIED_UUID);
         char_props.setSupports_read(true);
-        char_props.setSupports_write(true);
+        char_props.setSupports_notify(true);
+        _characteristicProperties.add(char_props);
+
+        char_props = new CharacteristicProperties(Constants.DREAMBAND_SERVICE_UUID, Constants.COMMAND_OUTPUT_INDICATED_UUID);
+        char_props.setSupports_read(true);
         char_props.setSupports_notify(true);
         _characteristicProperties.add(char_props);
 
         char_props = new CharacteristicProperties(Constants.DREAMBAND_SERVICE_UUID, Constants.STREAM_DATA_NOTIFIED_UUID);
         char_props.setSupports_read(true);
-        char_props.setSupports_write(true);
         char_props.setSupports_notify(true);
         _characteristicProperties.add(char_props);
     }
@@ -351,13 +353,13 @@ public class DreambandBLEService extends Service {
                 return;
             }
             char_props = _characteristicProperties.get(char_props_inx);
-            if (!char_props.isSupports_notify()) {
+            if (!char_props.isSupports_notify() && !char_props.isSupports_indicate()) {
                 Log.e(TAG, "Error:Notifications not supported");
                 return;
             }
 
             if (_bluetoothLeService != null) {
-                if (!_bluetoothLeService.setNotificationsState(Utility.normaliseUUID(Constants.DREAMBAND_SERVICE_UUID), Utility.normaliseUUID(notifUUID), true)) {
+                if (!_bluetoothLeService.setNotificationsState(Utility.normaliseUUID(Constants.DREAMBAND_SERVICE_UUID), Utility.normaliseUUID(notifUUID), true, char_props.isSupports_indicate())) {
                     Log.e(TAG, "Failed to set " + notifUUID + " notifications state");
                 }
             } else {
@@ -612,7 +614,7 @@ public class DreambandBLEService extends Service {
                         b = bundle.getByteArray(BleAdapterService.PARCEL_VALUE);
                         Log.d(TAG, "Value=" + Utility.byteArrayAsHexString(b));
 
-                        if (characteristic_uuid.equalsIgnoreCase(Constants.COMMAND_DATA_UUID)) {
+                        if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_DATA_UUID))) {
                             // Append data to buffer and determine if there is more data to read
                             _bleRxBuffer.put(b);
                             if (_bleRxBuffer.position() >= _bleRxBuffer.limit()) {
@@ -731,7 +733,7 @@ public class DreambandBLEService extends Service {
 
         Constants.CommandState state = Constants.CommandState.fromValue(charData[0]);
         Log.i(TAG, "commandStatusHandler() state: " + state);
-        DreambandRequest req = _commandQueue.poll();
+        DreambandRequest req = _commandQueue.peek();
         switch (state) {
             // End of current command
             case IDLE:
@@ -749,6 +751,7 @@ public class DreambandBLEService extends Service {
                 Log.i(TAG, ">>>> READ RESPONSE");
                 // Second status byte is number of bytes available to read
                 int count = charData[1];
+                Log.d(TAG, "Response type: " + state + ". Length: " + count);
                 // Read count bytes from the Command Data characteristic
                 _bleRxBuffer = ByteBuffer.allocate(count).order(ByteOrder.LITTLE_ENDIAN);
                 _bleState = BleState.WAIT_REQUEST_RESP;

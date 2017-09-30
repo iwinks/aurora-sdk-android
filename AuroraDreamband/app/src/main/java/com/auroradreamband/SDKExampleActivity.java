@@ -196,6 +196,15 @@ public class SDKExampleActivity extends AppCompatActivity {
         }
     }
 
+    public void onGetOSVersion(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Getting OS version info.");
+            _dreambandServices.osVersion();
+        }
+    }
+
 
     // ********* Dreamband Services Handler ********** //
     // Handler that will be called whenever an Intent is broadcasted from the Dreamband service.
@@ -229,7 +238,17 @@ public class SDKExampleActivity extends AppCompatActivity {
                         // The table contents are stored in:
                         HashMap<String, String> tableContents = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESP_UNSYNCED_SESSION_COUNT);
 
-                        showMsg("Received unsync session count: " + intent.getStringExtra(DreambandResp.RESP_TABLE_SIZE));
+                        showMsg("Received unsync session count: " + intent.getIntExtra(DreambandResp.RESP_TABLE_SIZE, -1));
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_OS_VERSION)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        showMsg("Received version info: " + intent.getIntExtra(DreambandResp.RESP_OS_VERSION, -1));
                         prgs_bleActive.setVisibility(View.INVISIBLE);
                     }
                 }, 100);

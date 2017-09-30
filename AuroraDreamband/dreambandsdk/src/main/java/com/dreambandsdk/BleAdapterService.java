@@ -421,7 +421,7 @@ public class BleAdapterService extends Service {
         return mBluetoothGatt.readCharacteristic(gattChar);
     }
 
-    public boolean setNotificationsState(String serviceUuid, String characteristicUuid, boolean enabled) {
+    public boolean setNotificationsState(String serviceUuid, String characteristicUuid, boolean enabled, boolean useIndication) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             sendConsoleMessage("setNotificationsState: mBluetoothAdapter|mBluetoothGatt null");
             return false;
@@ -437,11 +437,15 @@ public class BleAdapterService extends Service {
             sendConsoleMessage("setNotificationsState: gattChar null");
             return false;
         }
+
         mBluetoothGatt.setCharacteristicNotification (gattChar, enabled);
         // Enable remote notifications
         descriptor = gattChar.getDescriptor(UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG));
         Log.d(Constants.TAG, "XXXX Descriptor:" + descriptor.getUuid());
-        descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        if (useIndication)
+            descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+        else
+            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         boolean ok = mBluetoothGatt.writeDescriptor(descriptor);
         return ok;
     }
