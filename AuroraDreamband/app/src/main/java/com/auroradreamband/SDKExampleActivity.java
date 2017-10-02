@@ -19,17 +19,21 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dreambandsdk.DreambandBLEService;
 import com.dreambandsdk.DreambandResp;
+import com.dreambandsdk.request.DreambandRequest;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 public class SDKExampleActivity extends AppCompatActivity {
     private final static String TAG = SDKExampleActivity.class.getSimpleName();
@@ -37,8 +41,9 @@ public class SDKExampleActivity extends AppCompatActivity {
 
     private DreambandBLEService _dreambandServices;
     private boolean _serviceBound = false;
-
     private TextView txt_status;
+    private EditText txt_command;
+    private EditText txt_response;
     private ProgressBar prgs_bleActive;
 
     @Override
@@ -47,6 +52,8 @@ public class SDKExampleActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sdkexample);
 
         txt_status = (TextView) findViewById(R.id.statusTextView);
+        txt_command = (EditText) findViewById(R.id.txtCommand);
+        txt_response = (EditText) findViewById(R.id.responseText);
         prgs_bleActive = (ProgressBar) findViewById(R.id.progressBarBleActive);
         if (Build.VERSION.SDK_INT >= 23) {
             // Marshmallow+ Permission APIs
@@ -187,6 +194,17 @@ public class SDKExampleActivity extends AppCompatActivity {
         }
     }
 
+    public void onCustomCommand(View v)
+    {
+        String command = txt_command.getText().toString();
+        if (_dreambandServices != null && !command.isEmpty()) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Sending command to dreamband...");
+            _dreambandServices.sendCommand(command, null);
+            txt_command.setText("");
+        }
+    }
+
     public void onGetUnsyncedSessionCount(View v)
     {
         if (_dreambandServices != null) {
@@ -230,15 +248,28 @@ public class SDKExampleActivity extends AppCompatActivity {
                     }
                 }, 100);
             }
+            else if (action.equals(DreambandResp.RESP_COMMAND)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        // The response contents are stored in:
+                        HashMap<String, String> tableContents = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESPONSE);
+                        String command = intent.getStringExtra(DreambandResp.RESP_COMMAND);
+                        DreambandRequest.ResponseType respType = (DreambandRequest.ResponseType)intent.getSerializableExtra(DreambandResp.RESP_TYPE);
+
+                        showMsg("Dreamband response received for command: " + command + ", Response Type: " + respType);
+                        Log.d(TAG, tableContents.toString());
+                        txt_response.setText(tableContents.toString());
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
             else if (action.equals(DreambandResp.RESP_UNSYNCED_SESSION_COUNT)) {
                 new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                     @Override
                     public void run() {
-
-                        // The table contents are stored in:
-                        HashMap<String, String> tableContents = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESP_UNSYNCED_SESSION_COUNT);
-
-                        showMsg("Received unsync session count: " + intent.getIntExtra(DreambandResp.RESP_TABLE_SIZE, -1));
+                        int unsyncedSessionCount =intent.getIntExtra(DreambandResp.RESP_UNSYNCED_SESSION_COUNT, -1);
+                        showMsg("Received unsync session count: " + unsyncedSessionCount);
                         prgs_bleActive.setVisibility(View.INVISIBLE);
                     }
                 }, 100);

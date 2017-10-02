@@ -23,9 +23,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.dreambandsdk.request.DreambandRequest;
-import com.dreambandsdk.request.ObjectRespRequest;
-import com.dreambandsdk.request.StringRespRequest;
-import com.dreambandsdk.request.TableRespRequest;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -127,6 +124,7 @@ public class DreambandBLEService extends Service {
         intentFilter.addAction(DreambandResp.RESP_DEVICE_ADDRESS);
         intentFilter.addAction(DreambandResp.RESP_DEVICE_DISCONNECTED);
 
+        intentFilter.addAction(DreambandResp.RESP_COMMAND);
         intentFilter.addAction(DreambandResp.RESP_UNSYNCED_SESSION_COUNT);
         intentFilter.addAction(DreambandResp.RESP_RENAME_SYNCED_SESSION);
         intentFilter.addAction(DreambandResp.RESP_REMOVE_EMPTY_SESSION);
@@ -749,6 +747,10 @@ public class DreambandBLEService extends Service {
             case RESPONSE_OBJECT_RDY:
             case RESPONSE_TABLE_RDY:
                 Log.i(TAG, ">>>> READ RESPONSE");
+                if (state == Constants.CommandState.RESPONSE_OBJECT_RDY)
+                    req.setResponseType(DreambandRequest.ResponseType.OBJECT_RESP);
+                else
+                    req.setResponseType(DreambandRequest.ResponseType.TABLE_RESP);
                 // Second status byte is number of bytes available to read
                 int count = charData[1];
                 Log.d(TAG, "Response type: " + state + ". Length: " + count);
@@ -853,12 +855,27 @@ public class DreambandBLEService extends Service {
         return true;
     }
 
+    /** Send a generic command to the dreamband
+     *  - broadcasts DreambandResp.RESP_COMMAND notification upon response
+     * @param command String command to send to the Dreamband
+     * @param data Extra request data to send to the Dreamband or null
+     * @return True if added to command queue, false otherwise
+     */
+    public boolean sendCommand(String command, byte[] data)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        //
+        return issueQueueRequest(new DreambandRequest(command, data, DreambandResp.RESP_COMMAND))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
     // Returns the number of unsynced sessions in the Aurora.
     public boolean unsyncedSessionCount()
     {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
-        return issueQueueRequest(new TableRespRequest("sd-dir-read sessions 0 *@*", DreambandResp.RESP_UNSYNCED_SESSION_COUNT))
+        String command = "sd-dir-read sessions 0 *@*";
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_UNSYNCED_SESSION_COUNT))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -874,7 +891,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "sd-rename sessions/" + name +  " sessions/" + id;
-        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_RENAME_SYNCED_SESSION))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_RENAME_SYNCED_SESSION))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -889,7 +906,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "sd-dir-del sessions/" + name;
-        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_REMOVE_EMPTY_SESSION))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_REMOVE_EMPTY_SESSION))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -903,7 +920,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "os-info";
-        return issueQueueRequest(new ObjectRespRequest(command, DreambandResp.RESP_OS_VERSION))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_OS_VERSION))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -917,7 +934,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "os-info";
-        return issueQueueRequest(new ObjectRespRequest(command, DreambandResp.RESP_BATTERY_LEVEL))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_BATTERY_LEVEL))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -931,7 +948,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "os-info";
-        return issueQueueRequest(new ObjectRespRequest(command, DreambandResp.RESP_IS_PROFILE_LOADED))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_IS_PROFILE_LOADED))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -945,7 +962,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "os-shutdown";
-        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_SHUTDOWN))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_SHUTDOWN))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -961,7 +978,7 @@ public class DreambandBLEService extends Service {
         // Results will be broadcasted after they are received
         int eventIds = DreambandEvent.getEventIdsValue(eventsToObserve);
         String command = "event-output-enable " + eventIds + " 16";
-        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_OBSERVE_EVENTS))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_OBSERVE_EVENTS))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -975,7 +992,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "help";
-        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_HELP))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_HELP))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
@@ -989,7 +1006,7 @@ public class DreambandBLEService extends Service {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         String command = "buzz-note " + note + " " + duration;
-        return issueQueueRequest(new StringRespRequest(command, DreambandResp.RESP_BUZZ))
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_BUZZ))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
