@@ -26,6 +26,7 @@ import android.widget.Toast;
 
 import com.dreambandsdk.DreambandBLEService;
 import com.dreambandsdk.DreambandResp;
+import com.dreambandsdk.TableRow;
 import com.dreambandsdk.request.DreambandRequest;
 
 import java.util.ArrayDeque;
@@ -201,7 +202,6 @@ public class SDKExampleActivity extends AppCompatActivity {
             prgs_bleActive.setVisibility(View.VISIBLE);
             showMsg("Sending command to dreamband...");
             _dreambandServices.sendCommand(command, null);
-            txt_command.setText("");
         }
     }
 
@@ -253,13 +253,19 @@ public class SDKExampleActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         // The response contents are stored in:
-                        HashMap<String, String> tableContents = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESPONSE);
                         String command = intent.getStringExtra(DreambandResp.RESP_COMMAND);
                         DreambandRequest.ResponseType respType = (DreambandRequest.ResponseType)intent.getSerializableExtra(DreambandResp.RESP_TYPE);
-
                         showMsg("Dreamband response received for command: " + command + ", Response Type: " + respType);
-                        Log.d(TAG, tableContents.toString());
-                        txt_response.setText(tableContents.toString());
+                        if (respType == DreambandRequest.ResponseType.TABLE_RESP)
+                        {
+                            ArrayList<TableRow> respTable = intent.getParcelableArrayListExtra(DreambandResp.RESPONSE);
+                            Log.d(TAG, respTable.toString());
+                            txt_response.setText(respTable.toString());
+                        } else {
+                            HashMap<String, String> respObj = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESPONSE);
+                            Log.d(TAG, respObj.toString());
+                            txt_response.setText(respObj.toString());
+                        }
                         prgs_bleActive.setVisibility(View.INVISIBLE);
                     }
                 }, 100);

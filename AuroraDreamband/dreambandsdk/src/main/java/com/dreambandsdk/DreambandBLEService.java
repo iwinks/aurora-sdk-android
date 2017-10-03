@@ -51,7 +51,7 @@ public class DreambandBLEService extends Service {
     public static final boolean SCAN_ON_START = false;
 
     /*************** Data Fields **********************/
-    enum BleState {IDLE, WAIT_REQUEST_RESP, DATA_TX, CMD_DATA_TX, STATUS_CMD_START, STATUS_CMD_END}
+    enum BleState {IDLE, WAIT_REQUEST_RESP, DATA_RX, DATA_TX, CMD_DATA_TX, STATUS_CMD_START, STATUS_CMD_END}
     enum ConnectionState {DISCONNECTED, CONNECTING, CONNECTED, SEARCHING}
 
     private BleState _bleState;
@@ -59,6 +59,7 @@ public class DreambandBLEService extends Service {
     private boolean _isInitialized = false;
     private Queue<DreambandRequest> _commandQueue;
     private Queue<String> _notificationUUIDs;
+    private Queue<Integer> _readQueue;
     private ByteBuffer _bleBuffer, _bleRxBuffer;
     private ArrayList<CharacteristicProperties> _characteristicProperties;
     private String _deviceName;
@@ -228,6 +229,7 @@ public class DreambandBLEService extends Service {
         _bleRxBuffer.order(ByteOrder.LITTLE_ENDIAN);
         _commandQueue = new ConcurrentLinkedQueue<DreambandRequest>();
         _notificationUUIDs = new ConcurrentLinkedQueue<String>();
+        _readQueue = new ConcurrentLinkedQueue<Integer>();
         _serviceThreadLatch = new CountDownLatch(1);
         _serviceThreadDone = false;
         // Create new thread to handle command requests
@@ -586,6 +588,7 @@ public class DreambandBLEService extends Service {
                         // Remove any commands in the queue
                         _commandQueue.clear();
                         _notificationUUIDs.clear();
+                        _readQueue.clear();
                         // Broadcast Disconnected intent
                         Intent intent = new Intent(DreambandResp.RESP_DEVICE_DISCONNECTED);
                         intent.putExtra(DreambandResp.RESP_VALID, true);
@@ -608,9 +611,8 @@ public class DreambandBLEService extends Service {
                         bundle = msg.getData();
                         service_uuid = bundle.getString(BleAdapterService.PARCEL_SERVICE_UUID);
                         characteristic_uuid = bundle.getString(BleAdapterService.PARCEL_CHARACTERISTIC_UUID);
-                        Log.d(TAG, "Handler processing characteristic read result: " + characteristic_uuid + " of " + service_uuid);
                         b = bundle.getByteArray(BleAdapterService.PARCEL_VALUE);
-                        Log.d(TAG, "Value=" + Utility.byteArrayAsHexString(b));
+                        Log.d(TAG, "Handler processing characteristic read result: " + characteristic_uuid + ", Value=" + Utility.byteArrayAsHexString(b));
 
                         if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_DATA_UUID))) {
                             // Append data to buffer and determine if there is more data to read
@@ -621,6 +623,16 @@ public class DreambandBLEService extends Service {
                                 DreambandRequest req = _commandQueue.peek();
                                 req.responseData(_bleRxBuffer.array());
                                 Log.i(TAG, "<<<< READ RESPONSE");
+
+                                if (_readQueue.isEmpty())
+                                    _bleState = BleState.WAIT_REQUEST_RESP;
+                                else {
+                                    // Issue a read command data for the number of bytes at the top of the queue
+                                    Integer readCount = _readQueue.poll();
+                                    _bleRxBuffer = ByteBuffer.allocate(readCount).order(ByteOrder.LITTLE_ENDIAN);
+                                    _bleState = BleState.DATA_RX;
+                                    readCommandData();
+                                }
                             } else {
                                 // There is more data to read
                                 readCommandData();
@@ -740,6 +752,7 @@ public class DreambandBLEService extends Service {
                 Intent cmdIntent = req.handleComplete();
                 broadcast(cmdIntent);
                 _commandQueue.poll();
+                _readQueue.clear();
                 _bleState = BleState.IDLE;
                 Log.i(TAG, "<<<< IDLE");
                 break;
@@ -755,9 +768,13 @@ public class DreambandBLEService extends Service {
                 int count = charData[1];
                 Log.d(TAG, "Response type: " + state + ". Length: " + count);
                 // Read count bytes from the Command Data characteristic
-                _bleRxBuffer = ByteBuffer.allocate(count).order(ByteOrder.LITTLE_ENDIAN);
-                _bleState = BleState.WAIT_REQUEST_RESP;
-                readCommandData();
+                if (_bleState == BleState.WAIT_REQUEST_RESP && _readQueue.isEmpty()) {
+                    _bleRxBuffer = ByteBuffer.allocate(count).order(ByteOrder.LITTLE_ENDIAN);
+                    _bleState = BleState.DATA_RX;
+                    readCommandData();
+                } else {
+                    _readQueue.add(count);
+                }
                 break;
             case INPUT_REQUESTED:
 

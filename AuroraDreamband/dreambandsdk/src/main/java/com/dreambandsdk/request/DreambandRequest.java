@@ -4,9 +4,11 @@ import android.content.Intent;
 
 import com.dreambandsdk.Constants;
 import com.dreambandsdk.DreambandResp;
+import com.dreambandsdk.TableRow;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +28,8 @@ public class DreambandRequest {
     protected String _request;
     protected String _respNotification;
     protected List<String> _responseString;
-    protected HashMap<String, String> _responseTable;
+    protected HashMap<String, String> _responseObject;
+    protected ArrayList<TableRow> _responseTable;
     protected boolean _hasOutput;
     protected boolean _compressionEnabled;
     protected ByteBuffer _output;
@@ -39,7 +42,8 @@ public class DreambandRequest {
         _reqData = new byte[Constants.BLE_MAX_PAYLOAD];
         _extraReqData = data;
         _responseString = new ArrayList<>();
-        _responseTable = new HashMap<String, String>();
+        _responseObject = new HashMap<>();
+        _responseTable = new ArrayList<TableRow>();
         _respNotification = respNotif;
         _hasOutput = false;
         _compressionEnabled = false;
@@ -109,25 +113,25 @@ public class DreambandRequest {
                     _intent.putExtra(DreambandResp.RESP_VALID, false);
                     break;
                 }
-                _responseTable.put(cols[0], cols[1]);
+                _responseObject.put(cols[0], cols[1]);
             }
 
             // Populate _intent with parsed response
-            _intent.putExtra(DreambandResp.RESPONSE, _responseTable);
+            _intent.putExtra(DreambandResp.RESPONSE, _responseObject);
             if (_respNotification.equalsIgnoreCase(DreambandResp.RESP_OS_VERSION)) {
                 // Parse OS version out of table
-                int version = Integer.parseInt(_responseTable.get("Version"));
+                int version = Integer.parseInt(_responseObject.get("Version"));
                 _intent.putExtra(_respNotification, version);
             }
             else if (_respNotification.equalsIgnoreCase(DreambandResp.RESP_BATTERY_LEVEL)) {
                 // Parse battery level out of table
-                String battLvlStr = _responseTable.get("Battery Level").replace("%", "");
+                String battLvlStr = _responseObject.get("Battery Level").replace("%", "");
                 int battLvl = Integer.parseInt(battLvlStr);
                 _intent.putExtra(_respNotification, battLvl);
             }
             else if (_respNotification.equalsIgnoreCase(DreambandResp.RESP_IS_PROFILE_LOADED)) {
                 // Parse battery level out of table
-                String profileStr = _responseTable.get("Profile");
+                String profileStr = _responseObject.get("Profile");
                 boolean isProfileLoaded = !profileStr.equalsIgnoreCase("NO");
                 _intent.putExtra(_respNotification, isProfileLoaded);
             }
@@ -137,7 +141,7 @@ public class DreambandRequest {
             ex.printStackTrace();
             parseSuccessful = false;
             _intent.putExtra(DreambandResp.RESP_VALID, false);
-            _intent.putExtra(_respNotification, _responseTable);
+            _intent.putExtra(_respNotification, _responseObject);
         }
 
         return parseSuccessful;
@@ -159,13 +163,17 @@ public class DreambandRequest {
                 String rowStr = _responseString.get(i);
                 String[] cols = rowStr.split(Pattern.quote("|"));
                 for (int j = 0; j < cols.length; j++) {
-                    cols[i] = cols[i].trim();
+                    cols[j] = cols[j].trim();
                 }
-                _responseTable.put(headerRow[i-1], cols[i-1]);
+                // TODO: Are tables always two x two? (Should TableRow contain 2 TableCells instead)
+                TableRow respObj = new TableRow(headerRow[0], cols[0]);
+                _responseTable.add(respObj);
+                respObj = new TableRow(headerRow[1], cols[1]);
+                _responseTable.add(respObj);
             }
 
             _intent.putExtra(DreambandResp.RESP_VALID, true);
-            _intent.putExtra(DreambandResp.RESPONSE, _responseTable);
+            _intent.putParcelableArrayListExtra(DreambandResp.RESPONSE, _responseTable);
 
         }
         catch (Exception ex)
@@ -173,7 +181,7 @@ public class DreambandRequest {
             ex.printStackTrace();
             parseSuccessful = false;
             _intent.putExtra(DreambandResp.RESP_VALID, false);
-            _intent.putExtra(_respNotification, _responseTable);
+            _intent.putExtra(DreambandResp.RESPONSE, _responseObject);
         }
         return parseSuccessful;
     }

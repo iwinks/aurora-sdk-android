@@ -1,11 +1,13 @@
 package com.dreambandsdk;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * Created by seanf on 9/17/2017.
  */
 
 public class DreambandResp {
-
     // Error Response Codes
     public enum ErrorCode {SUCCESS, DATA_RX, DATA_TX, ERROR}
 
