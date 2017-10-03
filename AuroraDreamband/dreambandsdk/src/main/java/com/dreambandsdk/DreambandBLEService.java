@@ -616,7 +616,11 @@ public class DreambandBLEService extends Service {
 
                         if (characteristic_uuid.equalsIgnoreCase(Utility.normaliseUUID(Constants.COMMAND_DATA_UUID))) {
                             // Append data to buffer and determine if there is more data to read
-                            _bleRxBuffer.put(b);
+                            if (_bleRxBuffer.position() + b.length > _bleRxBuffer.limit()) {
+                                Log.e(TAG, "Attempted to write more data to BLE RX buffer than allocated");
+                                _bleRxBuffer.put(b, 0, _bleRxBuffer.limit() - _bleRxBuffer.position());
+                            } else
+                                _bleRxBuffer.put(b);
                             if (_bleRxBuffer.position() >= _bleRxBuffer.limit()) {
                                 // Append data to command in queue
                                 _bleRxBuffer.flip();
