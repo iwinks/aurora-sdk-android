@@ -238,11 +238,26 @@ public class SDKExampleActivity extends AppCompatActivity {
         }
     }
 
+    public void onDisableEvents(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Disabling events.");
+            EnumSet<DreambandEvent> eventIds = EnumSet.of(DreambandEvent.awakening, DreambandEvent.buttonMonitor);
+            EnumSet<EventOutput> outputEventIds = EnumSet.of(EventOutput.ble);
+            _dreambandServices.disableEvents(eventIds, outputEventIds);
+        }
+    }
+
     // ********* Dreamband Services Handler ********** //
     // Handler that will be called whenever an Intent is broadcasted from the Dreamband service.
     private BroadcastReceiver dreambandServicesMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
+
+            // NOTE: Every intent has an extra named: DreambandResp.RESP_VALID that indicates
+            // if the command was successful
+
             final String action = intent.getAction();
             if (action.equals(DreambandResp.RESP_DEVICE_CONNECTED)) {
                 new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
@@ -308,6 +323,15 @@ public class SDKExampleActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         showMsg("Successfully observing events.");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_DISABLE_EVENTS)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        showMsg("Successfully disabled events.");
                         prgs_bleActive.setVisibility(View.INVISIBLE);
                     }
                 }, 100);

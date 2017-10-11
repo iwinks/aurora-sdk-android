@@ -32,6 +32,7 @@ public class DreambandResp {
     public final static String RESP_IS_PROFILE_LOADED = "com.dreambandsdk.RESP_IS_PROFILE_LOADED";
     public final static String RESP_SHUTDOWN = "com.dreambandsdk.RESP_SHUTDOWN";
     public final static String RESP_OBSERVE_EVENTS = "com.dreambandsdk.RESP_OBSERVE_EVENTS";
+    public final static String RESP_DISABLE_EVENTS = "com.dreambandsdk.RESP_DISABLE_EVENTS";
     public final static String RESP_HELP = "com.dreambandsdk.RESP_HELP";
     public final static String RESP_BUZZ = "com.dreambandsdk.RESP_BUZZ";
 

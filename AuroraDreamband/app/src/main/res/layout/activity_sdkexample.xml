@@ -94,19 +94,29 @@
         android:layout_height="wrap_content"
         android:onClick="onGetUnsyncedSessionCount"
         android:text="Get Unsynced Session Count"
-        android:layout_below="@+id/btnOSVersion"
-        android:layout_alignParentStart="true"
-        android:layout_marginTop="19dp" />
+        android:layout_marginTop="18dp"
+        android:layout_below="@+id/button3"
+        android:layout_alignParentStart="true" />
 
     <Button
         android:text="Observe Events"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/btnOSVersion"
-        android:layout_toEndOf="@+id/btnOSVersion"
-        android:layout_marginStart="24dp"
         android:id="@+id/button3"
-        android:onClick="onObserveEvents" />
+        android:onClick="onObserveEvents"
+        android:layout_marginTop="12dp"
+        android:layout_below="@+id/btnOSVersion"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:text="Disable Events"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button4"
+        android:layout_above="@+id/button_unsyncedSessionCount"
+        android:layout_toEndOf="@+id/button3"
+        android:layout_marginStart="19dp"
+        android:onClick="onDisableEvents" />
 
 
 </RelativeLayout>

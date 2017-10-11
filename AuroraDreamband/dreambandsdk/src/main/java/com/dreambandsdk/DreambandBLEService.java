@@ -135,6 +135,7 @@ public class DreambandBLEService extends Service {
         intentFilter.addAction(DreambandResp.RESP_IS_PROFILE_LOADED);
         intentFilter.addAction(DreambandResp.RESP_SHUTDOWN);
         intentFilter.addAction(DreambandResp.RESP_OBSERVE_EVENTS);
+        intentFilter.addAction(DreambandResp.RESP_DISABLE_EVENTS);
         intentFilter.addAction(DreambandResp.RESP_HELP);
         intentFilter.addAction(DreambandResp.RESP_BUZZ);
         return intentFilter;
@@ -1009,6 +1010,17 @@ public class DreambandBLEService extends Service {
         int outputEventIds = EventOutput.getEventIdsValue(eventOutputs);
         String command = "event-output-enable " + eventIds + " "+ outputEventIds;
         return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_OBSERVE_EVENTS))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    public boolean disableEvents(EnumSet<DreambandEvent> eventsToObserve, EnumSet<EventOutput> eventOutputs)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        int eventIds = DreambandEvent.getEventIdsValue(eventsToObserve);
+        int outputEventIds = EventOutput.getEventIdsValue(eventOutputs);
+        String command = "event-output-disable " + eventIds + " "+ outputEventIds;
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_DISABLE_EVENTS))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
