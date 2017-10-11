@@ -25,16 +25,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dreambandsdk.DreambandBLEService;
+import com.dreambandsdk.DreambandEvent;
 import com.dreambandsdk.DreambandResp;
+import com.dreambandsdk.EventOutput;
 import com.dreambandsdk.TableRow;
 import com.dreambandsdk.request.DreambandRequest;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 public class SDKExampleActivity extends AppCompatActivity {
     private final static String TAG = SDKExampleActivity.class.getSimpleName();
@@ -223,6 +227,16 @@ public class SDKExampleActivity extends AppCompatActivity {
         }
     }
 
+    public void onObserveEvents(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Subscribing to events.");
+            EnumSet<DreambandEvent> eventIds = EnumSet.of(DreambandEvent.awakening, DreambandEvent.buttonMonitor);
+            EnumSet<EventOutput> outputEventIds = EnumSet.of(EventOutput.ble);
+            _dreambandServices.observeEvents(eventIds, outputEventIds);
+        }
+    }
 
     // ********* Dreamband Services Handler ********** //
     // Handler that will be called whenever an Intent is broadcasted from the Dreamband service.
@@ -284,9 +298,27 @@ public class SDKExampleActivity extends AppCompatActivity {
                 new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                     @Override
                     public void run() {
-
                         showMsg("Received version info: " + intent.getIntExtra(DreambandResp.RESP_OS_VERSION, -1));
                         prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_OBSERVE_EVENTS)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        showMsg("Successfully observing events.");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.EVENT)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        DreambandEvent event = (DreambandEvent)intent.getSerializableExtra(DreambandResp.EVENT);
+                        long flag = intent.getLongExtra(DreambandResp.EVENT_FLAGS, 0);
+                        showMsg("Received event: " + event + " " + flag);
                     }
                 }, 100);
             }

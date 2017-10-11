@@ -57,13 +57,26 @@ public enum DreambandEvent
         }
 
     public int id() { return _eventValue; }
-    public static DreambandEvent fromValue(int eventValue)
+    public static DreambandEvent fromIntValue(int eventValue)
     {
         DreambandEvent resp = null;
         for (DreambandEvent event : DreambandEvent.values())
         {
             int flagValue = event.id();
             if ( (flagValue&eventValue ) == flagValue ) {
+                resp = event;
+            }
+        }
+        return resp;
+    }
+
+    public static DreambandEvent fromValue(byte eventValue)
+    {
+        DreambandEvent resp = null;
+        for (DreambandEvent event : DreambandEvent.values())
+        {
+            int flagValue = event.id();
+            if ((1<<eventValue) == flagValue ) {
                 resp = event;
             }
         }

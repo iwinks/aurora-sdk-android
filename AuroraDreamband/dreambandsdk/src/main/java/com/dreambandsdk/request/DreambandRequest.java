@@ -1,6 +1,7 @@
 package com.dreambandsdk.request;
 
 import android.content.Intent;
+import android.util.Log;
 
 import com.dreambandsdk.Constants;
 import com.dreambandsdk.DreambandResp;
@@ -13,12 +14,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32;
 
 /**
  * Created by seanf on 9/9/2017.
  */
 
 public class DreambandRequest {
+
+    private static final String TAG = DreambandRequest.class.getName();
 
     public enum ResponseType {OBJECT_RESP, TABLE_RESP}
     // Class members
@@ -47,6 +51,7 @@ public class DreambandRequest {
         _respNotification = respNotif;
         _hasOutput = false;
         _compressionEnabled = false;
+        // TODO: Determine size to allocate
         _output = ByteBuffer.allocate(Constants.BLE_MAX_OUTPUT_BUF);
     }
 
@@ -85,14 +90,49 @@ public class DreambandRequest {
         _intent = new Intent(_respNotification);
         _intent.putExtra(DreambandResp.RESP_TYPE, _respType);
         _intent.putExtra(DreambandResp.RESP_COMMAND, _request);
-        // Parse the response string appropiately
+        // Add output and response data to intent
+        _output.flip();
+        _intent.putExtra(DreambandResp.RESP_OUTPUT, _output.array());
+        // Parse the response string appropriately
         if (_respType == ResponseType.OBJECT_RESP)
             parseObjectResponse();
         else if (_respType == ResponseType.TABLE_RESP)
             parseTableResponse();
+
+        // Integrity Check
+        if (_hasOutput)
+        {
+            if (!integrityCheck()) {
+                _intent.putExtra(DreambandResp.RESP_VALID, false);
+                _intent.putExtra(DreambandResp.RESP_ERROR, "Data checksum does not match");
+            }
+        }
         // Return the populated intent
         return _intent;
     }
+
+    private boolean integrityCheck()
+    {
+        long rxDataChecksum = dataChecksum();
+        String bleChecksumStr = _responseObject.get("CRC").replace("0x", "");
+        long bleChecksum = Long.parseLong(bleChecksumStr, 16);
+
+        Log.d(TAG, "integrityCheck(): bleChecksum = " + bleChecksum + ", rxDataChecksum = " + rxDataChecksum);
+
+        return bleChecksum == rxDataChecksum;
+    }
+
+    private long dataChecksum() {
+        long crcHash = 0;
+
+        CRC32 crc = new CRC32();
+        byte[] outputData = _output.array();
+        crc.update(outputData, 0, _output.limit());
+        crcHash = crc.getValue();
+
+        return crcHash;
+    }
+
 
     private boolean parseObjectResponse()
     {
@@ -117,6 +157,7 @@ public class DreambandRequest {
             }
 
             // Populate _intent with parsed response
+            _intent.putExtra(DreambandResp.RESP_VALID, true);
             _intent.putExtra(DreambandResp.RESPONSE, _responseObject);
             if (_respNotification.equalsIgnoreCase(DreambandResp.RESP_OS_VERSION)) {
                 // Parse OS version out of table
@@ -165,7 +206,6 @@ public class DreambandRequest {
                 for (int j = 0; j < cols.length; j++) {
                     cols[j] = cols[j].trim();
                 }
-                // TODO: Are tables always two x two? (Should TableRow contain 2 TableCells instead)
                 TableRow respObj = new TableRow(headerRow[0], cols[0]);
                 _responseTable.add(respObj);
                 respObj = new TableRow(headerRow[1], cols[1]);

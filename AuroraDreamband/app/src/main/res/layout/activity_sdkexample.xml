@@ -98,5 +98,15 @@
         android:layout_alignParentStart="true"
         android:layout_marginTop="19dp" />
 
+    <Button
+        android:text="Observe Events"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/btnOSVersion"
+        android:layout_toEndOf="@+id/btnOSVersion"
+        android:layout_marginStart="24dp"
+        android:id="@+id/button3"
+        android:onClick="onObserveEvents" />
+
 
 </RelativeLayout>

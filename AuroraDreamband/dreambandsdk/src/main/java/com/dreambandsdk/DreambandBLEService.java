@@ -125,6 +125,7 @@ public class DreambandBLEService extends Service {
         intentFilter.addAction(DreambandResp.RESP_DEVICE_ADDRESS);
         intentFilter.addAction(DreambandResp.RESP_DEVICE_DISCONNECTED);
 
+        intentFilter.addAction(DreambandResp.EVENT);
         intentFilter.addAction(DreambandResp.RESP_COMMAND);
         intentFilter.addAction(DreambandResp.RESP_UNSYNCED_SESSION_COUNT);
         intentFilter.addAction(DreambandResp.RESP_RENAME_SYNCED_SESSION);
@@ -823,7 +824,7 @@ public class DreambandBLEService extends Service {
     {
         Log.i(TAG, "eventHandler()");
         // Parse event data
-        int eventId = data[0];
+        byte eventId = data[0];
         long flags = Utility.getUnsignedInt32(data, 1);
         DreambandEvent event = DreambandEvent.fromValue(eventId);
         Log.d(TAG, "Event data: " + event + " flags = " + flags);
@@ -849,6 +850,13 @@ public class DreambandBLEService extends Service {
         intent.putExtra(DreambandResp.RESP_DEVICE_NAME, _deviceName);
         intent.putExtra(DreambandResp.RESP_DEVICE_ADDRESS, _deviceAddress);
         broadcast(intent);
+    }
+
+    private void setTime() {
+        // TODO: Set time upon connection
+        String command = "clock-set ";
+
+
     }
 
     /**** Public Dreamband Service Methods ***********/
@@ -993,12 +1001,13 @@ public class DreambandBLEService extends Service {
      Events will be broadcasted as EVENT notifications as they are received from the Aurora
      - completion: broadcasts DreambandResp.RESP_OBSERVE_EVENTS notification upon completion
      */
-    public boolean observeEvents(EnumSet<DreambandEvent> eventsToObserve)
+    public boolean observeEvents(EnumSet<DreambandEvent> eventsToObserve, EnumSet<EventOutput> eventOutputs)
     {
         // Add the command to the queue and return true for success, false otherwise
         // Results will be broadcasted after they are received
         int eventIds = DreambandEvent.getEventIdsValue(eventsToObserve);
-        String command = "event-output-enable " + eventIds + " 16";
+        int outputEventIds = EventOutput.getEventIdsValue(eventOutputs);
+        String command = "event-output-enable " + eventIds + " "+ outputEventIds;
         return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_OBSERVE_EVENTS))
                 == DreambandResp.ErrorCode.SUCCESS;
     }
