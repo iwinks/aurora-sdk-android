@@ -630,14 +630,26 @@ public class DreambandBLEService extends Service {
                                 req.responseData(_bleRxBuffer.array());
                                 Log.i(TAG, "<<<< READ RESPONSE");
 
-                                if (_readQueue.isEmpty())
+                                if (_readQueue.isEmpty()) {
                                     _bleState = BleState.WAIT_REQUEST_RESP;
+                                    if (req.is_complete())
+                                        handleComplete();
+                                }
                                 else {
                                     // Issue a read command data for the number of bytes at the top of the queue
                                     Integer readCount = _readQueue.poll();
-                                    _bleRxBuffer = ByteBuffer.allocate(readCount).order(ByteOrder.LITTLE_ENDIAN);
-                                    _bleState = BleState.DATA_RX;
-                                    readCommandData();
+                                    if (readCount == null) {
+                                        Log.d(TAG, "readCount is null");
+                                        if (_readQueue.isEmpty()) {
+                                            _bleState = BleState.WAIT_REQUEST_RESP;
+                                            if (req.is_complete())
+                                                handleComplete();
+                                        }
+                                    } else {
+                                        _bleRxBuffer = ByteBuffer.allocate(readCount).order(ByteOrder.LITTLE_ENDIAN);
+                                        _bleState = BleState.DATA_RX;
+                                        readCommandData();
+                                    }
                                 }
                             } else {
                                 // There is more data to read
@@ -754,13 +766,11 @@ public class DreambandBLEService extends Service {
             // End of current command
             case IDLE:
                 Log.i(TAG, ">>>> IDLE");
-                // Finish the current command in the queue
-                Intent cmdIntent = req.handleComplete();
-                broadcast(cmdIntent);
-                _commandQueue.poll();
-                _readQueue.clear();
-                _bleState = BleState.IDLE;
-                Log.i(TAG, "<<<< IDLE");
+                // Make sure we are not still reading data
+                req.set_complete(true);
+                if (_bleState != BleState.DATA_RX) {
+                    handleComplete();
+                }
                 break;
             // Received response line(s)
             case RESPONSE_OBJECT_RDY:
@@ -802,6 +812,17 @@ public class DreambandBLEService extends Service {
                 Log.i(TAG, "<<<< INPUT REQUESTED");
                 break;
         }
+    }
+
+    private void handleComplete() {
+
+        // Finish the current command in the queue
+        DreambandRequest req = _commandQueue.poll();
+        Intent cmdIntent = req.handleComplete();
+        broadcast(cmdIntent);
+        _readQueue.clear();
+        _bleState = BleState.IDLE;
+        Log.i(TAG, "<<<< IDLE");
     }
 
     // Command Output data received
@@ -875,13 +896,22 @@ public class DreambandBLEService extends Service {
     // Disconnects and stops scanning for the dreamband device
     public boolean disconnect()
     {
-        if (_connectionState != ConnectionState.DISCONNECTED)
-        {
-            if (_bluetoothLeService != null)
-                _bluetoothLeService.disconnect();
-        }
         if (_scanning)
             scanLeDevice(false);
+        if (_connectionState != ConnectionState.DISCONNECTED)
+        {
+            if (_bleState != BleState.IDLE)
+            {
+                _bluetoothLeService.disconnect();
+            } else {
+                // Add the command to the queue and return true for success, false otherwise
+                // Results will be broadcasted after they are received
+                String command = "ble-disconnect";
+                return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_DEVICE_DISCONNECTED))
+                        == DreambandResp.ErrorCode.SUCCESS;
+            }
+        }
+
         return true;
     }
 

@@ -94,6 +94,7 @@
         android:layout_height="wrap_content"
         android:onClick="onGetUnsyncedSessionCount"
         android:text="Get Unsynced Session Count"
+        android:visibility="invisible"
         android:layout_marginTop="18dp"
         android:layout_below="@+id/button3"
         android:layout_alignParentStart="true" />
