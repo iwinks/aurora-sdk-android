@@ -29,6 +29,11 @@ import com.dreambandsdk.DreambandEvent;
 import com.dreambandsdk.DreambandResp;
 import com.dreambandsdk.EventOutput;
 import com.dreambandsdk.TableRow;
+import com.dreambandsdk.profile.CustomSetting;
+import com.dreambandsdk.profile.Profile;
+import com.dreambandsdk.profile.ProfileSetting;
+import com.dreambandsdk.profile.SmartAlarmEnabled;
+import com.dreambandsdk.profile.WakeupTime;
 import com.dreambandsdk.request.DreambandRequest;
 
 import java.util.ArrayDeque;
@@ -49,6 +54,7 @@ public class SDKExampleActivity extends AppCompatActivity {
     private TextView txt_status;
     private EditText txt_command;
     private EditText txt_response;
+    private EditText txt_profileName;
     private ProgressBar prgs_bleActive;
 
     @Override
@@ -59,6 +65,7 @@ public class SDKExampleActivity extends AppCompatActivity {
         txt_status = (TextView) findViewById(R.id.statusTextView);
         txt_command = (EditText) findViewById(R.id.txtCommand);
         txt_response = (EditText) findViewById(R.id.responseText);
+        txt_profileName = (EditText) findViewById(R.id.txtProfileName);
         prgs_bleActive = (ProgressBar) findViewById(R.id.progressBarBleActive);
         if (Build.VERSION.SDK_INT >= 23) {
             // Marshmallow+ Permission APIs
@@ -249,6 +256,85 @@ public class SDKExampleActivity extends AppCompatActivity {
         }
     }
 
+    public void onListProfiles(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Getting profiles list.");
+            _dreambandServices.listProfiles();
+        }
+    }
+
+    public void onUnloadProfile(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Unloading profile.");
+            _dreambandServices.unloadProfile();
+        }
+    }
+
+    public void onLoadProfile(View v)
+    {
+        String profName = txt_profileName.getText().toString();
+        if (profName == null || profName.isEmpty() || profName.length() == 0)
+        {
+            showMsg("Error: Check profile name");
+            return;
+        }
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Loading profile: " + profName);
+            _dreambandServices.loadProfile(profName);
+        }
+    }
+
+    public void onReadProfile(View v)
+    {
+        String profName = txt_profileName.getText().toString();
+        if (profName == null || profName.isEmpty() || profName.length() == 0)
+        {
+            showMsg("Error: Check profile name");
+            return;
+        }
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Loading profile: " + profName);
+            _dreambandServices.readProfile(profName);
+        }
+    }
+
+    public void onWriteProfile(View v)
+    {
+
+    }
+
+
+    private void createProfile() {
+
+        Profile prof = new Profile("my-profile");
+        prof.add(new WakeupTime(3));
+        prof.add(new SmartAlarmEnabled(false));
+        prof.add(new CustomSetting("custom-key", "custom-value"));
+
+        // Returns a HashMap of <setting key, ProfileSetting>
+        HashMap<String, ProfileSetting> settings = prof.get_settings();
+        // You can retrieve individual setting config strings
+        String config = settings.get(ProfileSetting.WAKEUP_TIME).config();
+        // Returns: {wakeup-time: 3}
+        config = settings.get(ProfileSetting.SMART_ALARM_ENABLED).config();
+        // Returns: {sa-enabled: YES}
+        config = settings.get("custom-key").config();
+        // Returns: {custom-key: custom-value}
+
+        // If you need the individual data types you can cast to the correct ProfileSetting
+        WakeupTime wakeTime = (WakeupTime)settings.get(ProfileSetting.WAKEUP_TIME);
+        int time = wakeTime.get_time(); // time = 3
+        String timeStr = wakeTime.get_value(); // timeStr = "3"
+
+    }
+
+
     // ********* Dreamband Services Handler ********** //
     // Handler that will be called whenever an Intent is broadcasted from the Dreamband service.
     private BroadcastReceiver dreambandServicesMessageReceiver = new BroadcastReceiver() {
@@ -343,6 +429,47 @@ public class SDKExampleActivity extends AppCompatActivity {
                         DreambandEvent event = (DreambandEvent)intent.getSerializableExtra(DreambandResp.EVENT);
                         long flag = intent.getLongExtra(DreambandResp.EVENT_FLAGS, 0);
                         showMsg("Received event: " + event + " " + flag);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_LIST_PROFILES)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        ArrayList<TableRow> respTable = intent.getParcelableArrayListExtra(DreambandResp.RESPONSE);
+                        Log.d(TAG, respTable.toString());
+                        txt_response.setText(respTable.toString());
+                        showMsg("Received profile list");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_LOAD_PROFILE)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        showMsg("Finished loading profile");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_UNLOAD_PROFILE)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        showMsg("Finished unloading profile");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_READ_PROFILE)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        showMsg("Finished reading profile");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+
+
                     }
                 }, 100);
             }

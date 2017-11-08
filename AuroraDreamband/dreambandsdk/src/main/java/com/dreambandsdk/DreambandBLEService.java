@@ -22,6 +22,8 @@ import android.os.SystemClock;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.dreambandsdk.profile.Profile;
+import com.dreambandsdk.profile.ProfileSetting;
 import com.dreambandsdk.request.DreambandRequest;
 
 import java.nio.ByteBuffer;
@@ -138,6 +140,13 @@ public class DreambandBLEService extends Service {
         intentFilter.addAction(DreambandResp.RESP_DISABLE_EVENTS);
         intentFilter.addAction(DreambandResp.RESP_HELP);
         intentFilter.addAction(DreambandResp.RESP_BUZZ);
+        intentFilter.addAction(DreambandResp.RESP_LIST_PROFILES);
+        intentFilter.addAction(DreambandResp.RESP_WRITE_PROFILE);
+        intentFilter.addAction(DreambandResp.RESP_READ_PROFILE);
+        intentFilter.addAction(DreambandResp.RESP_UPDATE_PROFILE);
+        intentFilter.addAction(DreambandResp.RESP_LOAD_PROFILE);
+        intentFilter.addAction(DreambandResp.RESP_UNLOAD_PROFILE);
+
         return intentFilter;
     }
 
@@ -819,7 +828,8 @@ public class DreambandBLEService extends Service {
         // Finish the current command in the queue
         DreambandRequest req = _commandQueue.poll();
         Intent cmdIntent = req.handleComplete();
-        broadcast(cmdIntent);
+        if (req.is_broadcastResult())
+            broadcast(cmdIntent);
         _readQueue.clear();
         _bleState = BleState.IDLE;
         Log.i(TAG, "<<<< IDLE");
@@ -1083,6 +1093,61 @@ public class DreambandBLEService extends Service {
     }
 
 
+    public boolean listProfiles()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "sd-dir-read profiles 1 *.prof";
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_LIST_PROFILES))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
 
+    public boolean loadProfile(String name)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "prof-load " + name;
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_READ_PROFILE))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    public boolean unloadProfile()
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "prof-unload";
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_READ_PROFILE))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+
+    public boolean readProfile(String name)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "sd-file-read " + name + " profiles 0";
+        return issueQueueRequest(new DreambandRequest(command, null, DreambandResp.RESP_READ_PROFILE))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    public boolean writeProfile(String name, Profile profile)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "sd-file-write " + name + " profiles 0 1 250 0";
+        byte[] profData = new byte[256];
+        return issueQueueRequest(new DreambandRequest(command, profData, DreambandResp.RESP_WRITE_PROFILE))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
+
+    public boolean updateProfile(String name, ProfileSetting[] profSettings)
+    {
+        // Add the command to the queue and return true for success, false otherwise
+        // Results will be broadcasted after they are received
+        String command = "sd-file-write " + name + " profiles 0 1 250 1";
+        byte[] profData = new byte[256];
+        return issueQueueRequest(new DreambandRequest(command, profData, DreambandResp.RESP_UPDATE_PROFILE))
+                == DreambandResp.ErrorCode.SUCCESS;
+    }
 
 }

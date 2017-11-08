@@ -36,6 +36,7 @@ public class DreambandRequest {
     protected ArrayList<TableRow> _responseTable;
     protected boolean _hasOutput;
     protected boolean _complete;
+    protected boolean _broadcastResult;
     protected boolean _compressionEnabled;
     protected ByteBuffer _output;
 
@@ -52,6 +53,7 @@ public class DreambandRequest {
         _respNotification = respNotif;
         _hasOutput = false;
         _complete = false;
+        _broadcastResult = true;
         _compressionEnabled = false;
         // TODO: Determine size to allocate
         _output = ByteBuffer.allocate(Constants.BLE_MAX_OUTPUT_BUF);
@@ -232,7 +234,15 @@ public class DreambandRequest {
         return _complete;
     }
 
-    public void set_complete(boolean _complete) {
-        this._complete = _complete;
+    public void set_complete(boolean complete) {
+        this._complete = complete;
+    }
+
+    public boolean is_broadcastResult() {
+        return _broadcastResult;
+    }
+
+    public void set_broadcastResult(boolean broadcastResult) {
+        this._broadcastResult = broadcastResult;
     }
 }
