@@ -10,7 +10,7 @@ public class Constants {
 
     public static final int BLE_MTU = 20;
     public static final int BLE_MAX_PAYLOAD = 120;
-    public static final int BLE_MAX_OUTPUT_BUF = 1024;
+    public static final int BLE_MAX_OUTPUT_BUF = 2048;
 
     public static final String DREAMBAND_SERVICE_UUID = "6175726f7261454daf7942b381af0204";
 

@@ -4,8 +4,11 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.dreambandsdk.Constants;
+import com.dreambandsdk.DreambandBLEService;
 import com.dreambandsdk.DreambandResp;
 import com.dreambandsdk.TableRow;
+import com.dreambandsdk.profile.Profile;
+import com.dreambandsdk.profile.ProfileManager;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -155,7 +158,7 @@ public class DreambandRequest {
                     // Format error
                     parseSuccessful = false;
                     _intent.putExtra(DreambandResp.RESP_VALID, false);
-                    break;
+                    return parseSuccessful;
                 }
                 _responseObject.put(cols[0], cols[1]);
             }

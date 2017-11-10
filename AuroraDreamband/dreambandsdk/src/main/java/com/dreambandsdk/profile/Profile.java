@@ -1,21 +1,25 @@
 package com.dreambandsdk.profile;
 
-import java.util.ArrayList;
+import com.dreambandsdk.Constants;
+
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 
 /**
  * Created by seanf on 10/20/2017.
  */
 
-public class Profile {
+public class Profile implements Serializable {
 
-    String _name;
+    String _fileName, _profileString;
     HashMap<String, ProfileSetting> _settings;
+    byte[] _profileBytes;
 
     public Profile(String name) {
-        _name = name;
+        _fileName = name;
         _settings = new LinkedHashMap<>();
     }
 
@@ -35,7 +39,33 @@ public class Profile {
         return sb.toString();
     }
 
+    public String get_fileName() {
+        return _fileName;
+    }
+
+    public void set_fileName(String fileName) {
+        this._fileName = fileName;
+    }
+
+    public String get_profileString() {
+        return _profileString;
+    }
+
+    public void set_profileString(String profileString) {
+        _profileString = profileString;
+        _profileBytes = profileString.getBytes(Charset.forName("UTF-8"));
+    }
+
     public HashMap<String, ProfileSetting> get_settings() {
         return _settings;
+    }
+
+    public byte[] get_profileBytes() {
+        return _profileBytes;
+    }
+
+    public void set_profileBytes(byte[] profileBytes) {
+        _profileBytes = profileBytes;
+        _profileString = new String(profileBytes, Charset.forName("UTF-8"));
     }
 }

@@ -468,7 +468,8 @@ public class SDKExampleActivity extends AppCompatActivity {
                     public void run() {
                         showMsg("Finished reading profile");
                         prgs_bleActive.setVisibility(View.INVISIBLE);
-
+                        HashMap<String, String> respObj = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESPONSE);
+                        txt_response.setText(respObj.toString());
 
                     }
                 }, 100);

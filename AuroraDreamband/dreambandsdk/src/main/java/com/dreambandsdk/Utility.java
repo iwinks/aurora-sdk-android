@@ -10,6 +10,15 @@ public class Utility {
     private static final String BLUETOOTH_SIG_UUID_BASE = "0000XXXX-0000-1000-8000-00805f9b34fb";
     private static final String HEX_CHARS="01234567890ABCDEF";
 
+    public static boolean parseBoolean(String bool)
+    {
+        if (bool == null || bool.isEmpty())
+            return false;
+        if (bool.equalsIgnoreCase("YES") || bool.equalsIgnoreCase("1"))
+            return true;
+        return Boolean.parseBoolean(bool);
+    }
+
     public static String normaliseUUID(String uuid) {
         String normalised_128_bit_uuid = uuid;
         if (uuid.length() == 4) {
