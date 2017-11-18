@@ -30,9 +30,11 @@ import com.dreambandsdk.DreambandResp;
 import com.dreambandsdk.EventOutput;
 import com.dreambandsdk.TableRow;
 import com.dreambandsdk.profile.CustomSetting;
+import com.dreambandsdk.profile.DslEnabled;
 import com.dreambandsdk.profile.Profile;
 import com.dreambandsdk.profile.ProfileSetting;
 import com.dreambandsdk.profile.SmartAlarmEnabled;
+import com.dreambandsdk.profile.StimEnabled;
 import com.dreambandsdk.profile.WakeupTime;
 import com.dreambandsdk.request.DreambandRequest;
 
@@ -304,9 +306,26 @@ public class SDKExampleActivity extends AppCompatActivity {
         }
     }
 
-    public void onWriteProfile(View v)
+    public void onUpdateProfile(View v)
     {
+        // Update some profile settings
+        ProfileSetting[] settings = new ProfileSetting[2];
+        ProfileSetting profSetting = new StimEnabled(true);
+        settings[0] = profSetting;
+        profSetting = new DslEnabled(true);
+        settings[1] = profSetting;
 
+        String profName = txt_profileName.getText().toString();
+        if (profName == null || profName.isEmpty() || profName.length() == 0)
+        {
+            showMsg("Error: Check profile name");
+            return;
+        }
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Loading profile: " + profName);
+            _dreambandServices.updateProfile(profName, settings);
+        }
     }
 
 
@@ -467,6 +486,18 @@ public class SDKExampleActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         showMsg("Finished reading profile");
+                        prgs_bleActive.setVisibility(View.INVISIBLE);
+                        HashMap<String, String> respObj = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESPONSE);
+                        txt_response.setText(respObj.toString());
+
+                    }
+                }, 100);
+            }
+            else if (action.equals(DreambandResp.RESP_UPDATE_PROFILE)) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        showMsg("Finished updating profile");
                         prgs_bleActive.setVisibility(View.INVISIBLE);
                         HashMap<String, String> respObj = (HashMap<String, String>)intent.getSerializableExtra(DreambandResp.RESPONSE);
                         txt_response.setText(respObj.toString());

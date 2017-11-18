@@ -31,6 +31,25 @@ public class WriteProfileRequest extends DreambandRequest {
     }
 
     @Override
+    public byte[] getRequestData() {
+        if (!_isProfileUpdated) {
+            // Update the profile with the provided settings
+            ProfileManager pm = ProfileManager.getInstance();
+            if (pm.is_auroraProfileLoaded() &&
+                pm.get_auroraProfile().get_fileName().equalsIgnoreCase(_profileName)) {
+
+                // Profile already loaded, update settings
+                pm.updateProfileSettings(_profileSettings);
+                // Add the profile data to the request
+                setExtraRequestData(pm.get_auroraProfile().get_profileBytes());
+            } else
+                return null;
+        }
+
+        return super.getRequestData();
+    }
+
+    @Override
     public Intent handleComplete() {
         Intent intent = super.handleComplete();
 

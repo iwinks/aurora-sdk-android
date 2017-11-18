@@ -807,13 +807,12 @@ public class DreambandBLEService extends Service {
             case INPUT_REQUESTED:
 
                 Log.i(TAG, ">>>> INPUT REQUESTED");
-                byte[] cmdData = req.getExtraRequestData();
+                byte[] cmdData = req.getExtraRequestData(false);
                 if (cmdData == null || cmdData.length == 0)
                 {
                     Log.i(TAG, "No data to write");
                 } else {
                     Log.i(TAG, "Writing command data with " + cmdData.length + " bytes");
-                    req.clearExtraRequestData();
                     _bleBuffer = ByteBuffer.allocate(cmdData.length);
                     _bleBuffer.put(cmdData);
                     _bleBuffer.flip();

@@ -100,7 +100,7 @@ public abstract class ProfileSetting {
     }
 
     public String config() {
-        return _key + " : " + _value;
+        return "{" +_key + " : " + _value + "}";
     }
 
     // Getters and Setters

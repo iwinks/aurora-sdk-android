@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -42,6 +43,7 @@ public class DreambandRequest {
     protected boolean _broadcastResult;
     protected boolean _compressionEnabled;
     protected ByteBuffer _output;
+    protected int _requestDataIdx;
 
     // Constructor
     public DreambandRequest(String command, byte[] data, String respNotif)
@@ -50,6 +52,7 @@ public class DreambandRequest {
         _respType = ResponseType.OBJECT_RESP;
         _reqData = new byte[Constants.BLE_MAX_PAYLOAD];
         _extraReqData = data;
+        _requestDataIdx = 0;
         _responseString = new ArrayList<>();
         _responseObject = new HashMap<>();
         _responseTable = new ArrayList<TableRow>();
@@ -65,8 +68,26 @@ public class DreambandRequest {
     // Class methods
     public void setResponseType(ResponseType respType) { _respType = respType; }
     public void setExtraRequestData(byte[] extraReqData) { _extraReqData = extraReqData; }
-    public byte[] getExtraRequestData() { return _extraReqData; }
     public void clearExtraRequestData() { _extraReqData = new byte[0]; }
+    public byte[] getExtraRequestData(boolean allData)
+    {
+        if (allData || _extraReqData == null || _extraReqData.length == 0) {
+            return _extraReqData;
+        }
+        // Return the next BLE_MTU bytes and increment _requestDataIdx
+        int length = Constants.BLE_MTU;
+        byte[] respData = null;
+        if ((_extraReqData.length - _requestDataIdx) < Constants.BLE_MTU) {
+            length = _extraReqData.length - _requestDataIdx;
+            respData = Arrays.copyOfRange(_extraReqData, _requestDataIdx, _extraReqData.length-1);
+            clearExtraRequestData();
+        } else {
+            respData = Arrays.copyOfRange(_extraReqData, _requestDataIdx, _requestDataIdx + Constants.BLE_MTU);
+        }
+        _requestDataIdx += length;
+        return respData;
+    }
+
 
     public byte[] getRequestData() {
         _reqData = _request.getBytes(Charset.forName("UTF-8"));

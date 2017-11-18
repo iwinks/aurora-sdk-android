@@ -100,26 +100,6 @@
         android:layout_alignParentStart="true" />
 
     <Button
-        android:text="Observe Events"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/button3"
-        android:onClick="onObserveEvents"
-        android:layout_marginTop="12dp"
-        android:layout_below="@+id/btnOSVersion"
-        android:layout_alignParentStart="true" />
-
-    <Button
-        android:text="Disable Events"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/button4"
-        android:layout_above="@+id/button_unsyncedSessionCount"
-        android:layout_toEndOf="@+id/button3"
-        android:layout_marginStart="19dp"
-        android:onClick="onDisableEvents" />
-
-    <Button
         android:text="List Profiles"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -127,25 +107,6 @@
         android:layout_alignParentStart="true"
         android:id="@+id/btnListProfiles"
         android:onClick="onListProfiles" />
-
-    <Button
-        android:text="Unload Profile"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/button_unsyncedSessionCount"
-        android:layout_alignStart="@+id/button4"
-        android:id="@+id/button6"
-        android:onClick="onUnloadProfile" />
-
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="textPersonName"
-        android:ems="10"
-        android:id="@+id/txtProfileName"
-        android:hint="Profile Name"
-        android:layout_below="@+id/button_unsyncedSessionCount"
-        android:layout_alignStart="@+id/button6" />
 
     <TextView
         android:text="Profile Name:"
@@ -158,22 +119,73 @@
         android:layout_alignEnd="@+id/btnListProfiles" />
 
     <Button
+        android:text="Observe Events"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button3"
+        android:onClick="onObserveEvents"
+        android:layout_alignBaseline="@+id/btnOSVersion"
+        android:layout_alignBottom="@+id/btnOSVersion"
+        android:layout_alignEnd="@+id/btnCustomCommand"
+        android:layout_marginEnd="24dp" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="textPersonName"
+        android:ems="10"
+        android:id="@+id/txtProfileName"
+        android:hint="Profile Name"
+        android:layout_below="@+id/button_unsyncedSessionCount"
+        android:layout_alignEnd="@+id/responseText" />
+
+    <Button
+        android:text="Disable Events"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button4"
+        android:onClick="onDisableEvents"
+        android:layout_alignBaseline="@+id/button_unsyncedSessionCount"
+        android:layout_alignBottom="@+id/button_unsyncedSessionCount"
+        android:layout_alignStart="@+id/button3" />
+
+    <Button
         android:text="Read Profile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/btnReadProfile"
+        android:onClick="onReadProfile"
         android:layout_below="@+id/txtProfileName"
-        android:layout_alignStart="@+id/textView"
-        android:onClick="onReadProfile" />
+        android:layout_alignStart="@+id/btnLoadProfile" />
 
     <Button
         android:text="Load Profile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/txtProfileName"
-        android:layout_alignStart="@+id/txtProfileName"
         android:id="@+id/btnLoadProfile"
-        android:onClick="onLoadProfile" />
+        android:onClick="onLoadProfile"
+        android:layout_below="@+id/btnReadProfile"
+        android:layout_alignStart="@+id/textView"
+        android:layout_marginTop="15dp" />
+
+    <Button
+        android:text="Unload Profile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button6"
+        android:onClick="onUnloadProfile"
+        android:layout_alignBaseline="@+id/btnLoadProfile"
+        android:layout_alignBottom="@+id/btnLoadProfile"
+        android:layout_alignStart="@+id/txtProfileName" />
+
+    <Button
+        android:text="Update Profile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button5"
+        android:layout_below="@+id/txtProfileName"
+        android:layout_alignEnd="@+id/button6"
+        android:onClick="onUpdateProfile" />
 
 
 </RelativeLayout>
