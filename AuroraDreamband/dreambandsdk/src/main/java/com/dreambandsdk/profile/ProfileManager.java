@@ -61,6 +61,15 @@ public class ProfileManager {
         return _auroraProfile;
     }
 
+    public boolean updateProfileSettings(String name, ProfileSetting[] profileSettings)
+    {
+        // Make sure the profile is loaded into this instance
+        if (!_auroraProfileLoaded)
+            return false;
+        _auroraProfile.set_fileName(name);
+        return updateProfileSettings(profileSettings);
+    }
+
     public boolean updateProfileSettings(ProfileSetting[] profileSettings)
     {
         boolean profileUpdated = false;

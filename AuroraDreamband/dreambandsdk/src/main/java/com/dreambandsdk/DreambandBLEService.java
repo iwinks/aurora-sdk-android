@@ -1131,14 +1131,28 @@ public class DreambandBLEService extends Service {
                 == DreambandResp.ErrorCode.SUCCESS;
     }
 
-    public boolean writeProfile(String name, Profile profile)
+    public boolean writeProfile(Profile profile)
     {
-        // Add the command to the queue and return true for success, false otherwise
-        // Results will be broadcasted after they are received
-        String command = "sd-file-write " + name + " profiles 0 1 250 0";
-        byte[] profData = new byte[256];
-        return issueQueueRequest(new DreambandRequest(command, profData, DreambandResp.RESP_WRITE_PROFILE))
-                == DreambandResp.ErrorCode.SUCCESS;
+        String name = profile.get_fileName();
+        // Determine if the profile is already read
+        ProfileManager pm = ProfileManager.getInstance();
+        if (pm.is_auroraProfileLoaded() &&
+            pm.get_auroraProfile().get_fileName().equalsIgnoreCase(name)) {
+
+            // Profile already loaded, update settings
+            pm.updateProfileSettings(profile.get_profileSettings());
+            // Update profile on the dreamband
+            String command = "sd-file-write " + name + " profiles 0 1 250 0";
+            return issueQueueRequest(new WriteProfileRequest(command, name, pm.get_auroraProfile().get_profileBytes(),
+                    DreambandResp.RESP_UPDATE_PROFILE)) == DreambandResp.ErrorCode.SUCCESS;
+        } else {
+            // First read the default profile
+            readProfile(Constants.DEFAULT_PROFILE);
+            // Then update profile
+            String command = "sd-file-write " + name + " profiles 0 1 250 0";
+            return issueQueueRequest(new WriteProfileRequest(command, name, profile.get_profileSettings(),
+                    DreambandResp.RESP_UPDATE_PROFILE)) == DreambandResp.ErrorCode.SUCCESS;
+        }
     }
 
     public boolean updateProfile(String name, ProfileSetting[] profSettings)
@@ -1155,8 +1169,8 @@ public class DreambandBLEService extends Service {
             return issueQueueRequest(new WriteProfileRequest(command, name, pm.get_auroraProfile().get_profileBytes(),
                     DreambandResp.RESP_UPDATE_PROFILE)) == DreambandResp.ErrorCode.SUCCESS;
         } else {
-            // First read the profile
-            readProfile(name);
+            // First read the default profile
+            readProfile(Constants.DEFAULT_PROFILE);
             // Then update profile
             String command = "sd-file-write " + name + " profiles 0 1 250 0";
             return issueQueueRequest(new WriteProfileRequest(command, name, profSettings,

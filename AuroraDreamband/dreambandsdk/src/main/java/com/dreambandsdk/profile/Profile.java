@@ -5,8 +5,10 @@ import com.dreambandsdk.Constants;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Created by seanf on 10/20/2017.
@@ -58,6 +60,15 @@ public class Profile implements Serializable {
 
     public HashMap<String, ProfileSetting> get_settings() {
         return _settings;
+    }
+
+    public ProfileSetting[] get_profileSettings() {
+        ProfileSetting[] profSettings = new ProfileSetting[_settings.size()];
+        List<ProfileSetting> profList = new ArrayList<>(_settings.values());
+        for (int i = 0; i < profList.size(); i++) {
+            profSettings[i] = profList.get(i);
+        }
+        return profSettings;
     }
 
     public byte[] get_profileBytes() {

@@ -301,7 +301,7 @@ public class SDKExampleActivity extends AppCompatActivity {
         }
         if (_dreambandServices != null) {
             prgs_bleActive.setVisibility(View.VISIBLE);
-            showMsg("Loading profile: " + profName);
+            showMsg("Reading profile: " + profName);
             _dreambandServices.readProfile(profName);
         }
     }
@@ -310,9 +310,9 @@ public class SDKExampleActivity extends AppCompatActivity {
     {
         // Update some profile settings
         ProfileSetting[] settings = new ProfileSetting[2];
-        ProfileSetting profSetting = new StimEnabled(true);
+        ProfileSetting profSetting = new StimEnabled(false);
         settings[0] = profSetting;
-        profSetting = new DslEnabled(true);
+        profSetting = new DslEnabled(false);
         settings[1] = profSetting;
 
         String profName = txt_profileName.getText().toString();
@@ -325,6 +325,27 @@ public class SDKExampleActivity extends AppCompatActivity {
             prgs_bleActive.setVisibility(View.VISIBLE);
             showMsg("Loading profile: " + profName);
             _dreambandServices.updateProfile(profName, settings);
+        }
+    }
+
+    public void onCreateProfile(View v)
+    {
+        String profName = txt_profileName.getText().toString();
+        if (profName == null || profName.isEmpty() || profName.length() == 0)
+        {
+            showMsg("Error: Check profile name");
+            return;
+        }
+
+        // Update some profile settings
+        Profile prof = new Profile(profName);
+        prof.add(new StimEnabled(true));
+        prof.add(new DslEnabled(true));
+
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Loading profile: " + profName);
+            _dreambandServices.writeProfile(prof);
         }
     }
 

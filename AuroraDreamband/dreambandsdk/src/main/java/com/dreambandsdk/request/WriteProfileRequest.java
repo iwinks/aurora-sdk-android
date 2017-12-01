@@ -35,11 +35,10 @@ public class WriteProfileRequest extends DreambandRequest {
         if (!_isProfileUpdated) {
             // Update the profile with the provided settings
             ProfileManager pm = ProfileManager.getInstance();
-            if (pm.is_auroraProfileLoaded() &&
-                pm.get_auroraProfile().get_fileName().equalsIgnoreCase(_profileName)) {
+            if (pm.is_auroraProfileLoaded()) {
 
                 // Profile already loaded, update settings
-                pm.updateProfileSettings(_profileSettings);
+                pm.updateProfileSettings(_profileName, _profileSettings);
                 // Add the profile data to the request
                 setExtraRequestData(pm.get_auroraProfile().get_profileBytes());
             } else

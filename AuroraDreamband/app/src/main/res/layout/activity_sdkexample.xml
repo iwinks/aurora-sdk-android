@@ -187,5 +187,15 @@
         android:layout_alignEnd="@+id/button6"
         android:onClick="onUpdateProfile" />
 
+    <Button
+        android:text="Create Profile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/buttonCreate"
+        android:onClick="onCreateProfile"
+        android:layout_below="@+id/btnLoadProfile"
+        android:layout_alignStart="@+id/btnLoadProfile"
+        android:layout_marginTop="11dp" />
+
 
 </RelativeLayout>

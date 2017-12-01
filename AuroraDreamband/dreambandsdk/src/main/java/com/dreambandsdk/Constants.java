@@ -6,8 +6,9 @@ package com.dreambandsdk;
 
 public class Constants {
 
-    public static String TAG = "Auror Dreamband SDK";
+    public static String TAG = "Aurora Dreamband SDK";
 
+    public static String DEFAULT_PROFILE = "default.prof";
     public static final int BLE_MTU = 20;
     public static final int BLE_MAX_PAYLOAD = 120;
     public static final int BLE_MAX_OUTPUT_BUF = 2048;
