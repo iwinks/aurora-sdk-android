@@ -79,7 +79,7 @@ public class DreambandRequest {
         byte[] respData = null;
         if ((_extraReqData.length - _requestDataIdx) < Constants.BLE_MTU) {
             length = _extraReqData.length - _requestDataIdx;
-            respData = Arrays.copyOfRange(_extraReqData, _requestDataIdx, _extraReqData.length-1);
+            respData = Arrays.copyOfRange(_extraReqData, _requestDataIdx, _extraReqData.length);
             clearExtraRequestData();
         } else {
             respData = Arrays.copyOfRange(_extraReqData, _requestDataIdx, _requestDataIdx + Constants.BLE_MTU);

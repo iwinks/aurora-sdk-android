@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<RelativeLayout
     android:id="@+id/activity_sdkexample"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,6 +12,8 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.auroradreamband.SDKExampleActivity">
+
+
 
 
     <TextView
@@ -197,5 +202,35 @@
         android:layout_alignStart="@+id/btnLoadProfile"
         android:layout_marginTop="11dp" />
 
+    <Button
+        android:text="Create Example Directory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/buttonCreate"
+        android:layout_alignStart="@+id/buttonCreate"
+        android:layout_marginTop="13dp"
+        android:id="@+id/button7"
+        android:onClick="onCreateDir" />
+
+    <Button
+        android:text="Write file"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button8"
+        android:layout_below="@+id/button7"
+        android:layout_alignStart="@+id/button7"
+        android:layout_marginTop="15dp"
+        android:onClick="onWriteFile" />
+
+    <Button
+        android:text="Read File"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/button8"
+        android:layout_alignEnd="@+id/button"
+        android:id="@+id/button9"
+        android:onClick="onReadFile" />
+
 
 </RelativeLayout>
+</ScrollView>

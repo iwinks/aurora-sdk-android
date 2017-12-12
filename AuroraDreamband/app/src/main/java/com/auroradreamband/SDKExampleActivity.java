@@ -50,6 +50,9 @@ import java.util.Set;
 public class SDKExampleActivity extends AppCompatActivity {
     private final static String TAG = SDKExampleActivity.class.getSimpleName();
     private final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
+    String exampleFileName = "hello_world.bin";
+    String exampleDirName = "example";
+    byte[] exampleFileBytes = new byte[]{'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'};
 
     private DreambandBLEService _dreambandServices;
     private boolean _serviceBound = false;
@@ -346,6 +349,37 @@ public class SDKExampleActivity extends AppCompatActivity {
             prgs_bleActive.setVisibility(View.VISIBLE);
             showMsg("Loading profile: " + profName);
             _dreambandServices.writeProfile(prof);
+        }
+    }
+
+    public void onCreateDir(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Creating directory: " + exampleDirName);
+            String cmd = "sd-dir-create " + exampleDirName;
+            _dreambandServices.sendCommand(cmd, null);
+        }
+    }
+
+
+    public void onWriteFile(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Writing file: " + exampleFileName);
+            String cmd = "sd-file-write " + exampleFileName + " " + exampleDirName +  " 1 1 250 0";
+            _dreambandServices.sendCommand(cmd, exampleFileBytes);
+        }
+    }
+
+    public void onReadFile(View v)
+    {
+        if (_dreambandServices != null) {
+            prgs_bleActive.setVisibility(View.VISIBLE);
+            showMsg("Reading file: " + exampleFileName);
+            String cmd = "sd-file-read " + exampleFileName + " " + exampleDirName +  " 0";
+            _dreambandServices.sendCommand(cmd, null);
         }
     }
 

@@ -29,6 +29,7 @@ import com.dreambandsdk.request.DreambandRequest;
 import com.dreambandsdk.request.ReadProfileRequest;
 import com.dreambandsdk.request.WriteProfileRequest;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -1177,5 +1178,15 @@ public class DreambandBLEService extends Service {
                     DreambandResp.RESP_UPDATE_PROFILE)) == DreambandResp.ErrorCode.SUCCESS;
         }
     }
+//
+//    public boolean writeFile(String name, String directory, File file)
+//    {
+//
+//        //byte[] fileBytes =
+//        String command = "sd-file-write " + name + " " + directory + " 0 1 250 0";
+//            return issueQueueRequest(new WriteProfileRequest(command, name, profSettings,
+//                    DreambandResp.RESP_UPDATE_PROFILE)) == DreambandResp.ErrorCode.SUCCESS;
+//
+//    }
 
 }
