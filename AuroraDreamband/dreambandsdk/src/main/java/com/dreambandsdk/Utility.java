@@ -170,6 +170,23 @@ public class Utility {
         return ((bytes[offset] & 0xFF) << 24) | ((bytes[offset+1] & 0xFF) << 16) | ((bytes[offset+2] & 0xFF) << 8) | (bytes[offset+3] & 0xFF);
     }
 
+    public static String getCamelCasedString(String string){
+
+        StringBuilder stringBuilder = new StringBuilder(string.trim().toLowerCase());
+
+        for (int i = 0; i < stringBuilder.length(); i++) {
+
+            if (stringBuilder.charAt(i) == ' ') {
+
+                stringBuilder.deleteCharAt(i);
+
+                stringBuilder.replace(i, i+1, String.valueOf(Character.toUpperCase(stringBuilder.charAt(i))));
+            }
+        }
+
+        return stringBuilder.toString();
+    }
+
     public static void writeStringPadded(ByteBuffer buffer, String value, int len) {
         if (value == null) {
             value = "";
