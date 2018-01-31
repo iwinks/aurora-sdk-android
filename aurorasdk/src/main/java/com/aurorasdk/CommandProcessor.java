@@ -1,4 +1,4 @@
-package com.dreambandsdk;
+package com.aurorasdk;
 import android.util.Log;
 
 import java.io.IOException;

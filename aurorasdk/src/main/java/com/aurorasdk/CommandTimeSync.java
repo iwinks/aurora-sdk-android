@@ -1,4 +1,4 @@
-package com.dreambandsdk;
+package com.aurorasdk;
 
 import java.util.Calendar;
 

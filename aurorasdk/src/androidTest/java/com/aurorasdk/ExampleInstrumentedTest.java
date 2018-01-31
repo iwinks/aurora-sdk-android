@@ -1,4 +1,4 @@
-package com.dreambandsdk;
+package com.aurorasdk;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

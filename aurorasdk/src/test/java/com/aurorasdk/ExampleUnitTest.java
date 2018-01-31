@@ -1,4 +1,4 @@
-package com.dreambandsdk;
+package com.aurorasdk;
 
 import org.junit.Test;
 

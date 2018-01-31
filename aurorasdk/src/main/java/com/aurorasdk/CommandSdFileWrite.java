@@ -1,4 +1,4 @@
-package com.dreambandsdk;
+package com.aurorasdk;
 
 import android.util.Log;
 
@@ -7,8 +7,8 @@ import java.nio.charset.StandardCharsets;
 
 import heatshrink.HsOutputStream;
 
-import static com.dreambandsdk.Constants.COMMAND_COMPRESSION_LOOKAHEAD_SIZE;
-import static com.dreambandsdk.Constants.COMMAND_COMPRESSION_WINDOW_SIZE;
+import static com.aurorasdk.Constants.COMMAND_COMPRESSION_LOOKAHEAD_SIZE;
+import static com.aurorasdk.Constants.COMMAND_COMPRESSION_WINDOW_SIZE;
 
 /**
  * Created by jayalfredprufrock on 1/26/18.

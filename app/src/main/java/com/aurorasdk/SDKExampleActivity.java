@@ -1,5 +1,8 @@
 package com.aurorasdk;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -8,20 +11,16 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.dreambandsdk.Aurora;
-import com.dreambandsdk.Command;
-import com.dreambandsdk.CommandSdFileWrite;
-import com.dreambandsdk.CommandSdFileRead;
-import com.dreambandsdk.CommandTimeSync;
-import com.dreambandsdk.Event;
-import com.dreambandsdk.Profile;
-
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 
 public class SDKExampleActivity extends AppCompatActivity {
 
     private final static String TAG = SDKExampleActivity.class.getSimpleName();
+    
+    private final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
 
     private TextView txt_status;
     private EditText txt_command;
@@ -47,6 +46,17 @@ public class SDKExampleActivity extends AppCompatActivity {
         txt_response = (EditText) findViewById(R.id.responseText);
         txt_event = (EditText) findViewById(R.id.eventText);
         prgs_bleActive = (ProgressBar) findViewById(R.id.progressBarBleActive);
+
+        if (Build.VERSION.SDK_INT >= 23) {
+            // Marshmallow+ Permission APIs
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                final List<String> permissionsList = new ArrayList<String>();
+                permissionsList.add(Manifest.permission.ACCESS_FINE_LOCATION);
+
+                requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
+                        REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+            }
+        }
 
         aurora = Aurora.create(this, this::onConnectionStateChange);
     }

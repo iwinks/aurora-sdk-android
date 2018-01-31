@@ -20,13 +20,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name="com.dreambandsdk.DreambandBLEService"
-            android:enabled="true" />
-        <service
-            android:name="com.dreambandsdk.BleAdapterService"
-            android:enabled="true" />
     </application>
 
 </manifest>

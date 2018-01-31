@@ -1,4 +1,4 @@
-package com.dreambandsdk;
+package com.aurorasdk;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -6,8 +6,8 @@ import java.io.IOException;
 
 import heatshrink.HsInputStream;
 
-import static com.dreambandsdk.Constants.COMMAND_COMPRESSION_LOOKAHEAD_SIZE;
-import static com.dreambandsdk.Constants.COMMAND_COMPRESSION_WINDOW_SIZE;
+import static com.aurorasdk.Constants.COMMAND_COMPRESSION_LOOKAHEAD_SIZE;
+import static com.aurorasdk.Constants.COMMAND_COMPRESSION_WINDOW_SIZE;
 
 /**
  * Created by jayalfredprufrock on 1/26/18.

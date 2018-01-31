@@ -1,6 +1,4 @@
-package com.dreambandsdk;
-
-import android.util.Log;
+package com.aurorasdk;
 
 import java.util.EnumSet;
 
