@@ -14,10 +14,6 @@ import java.util.Map;
 
 public class Command {
 
-    public interface CommandExecutor {
-        void executeCommand(Command command);
-    }
-
     public interface CommandCompletionListener {
         void onCommandComplete(Command command);
     }
@@ -76,15 +72,20 @@ public class Command {
         completeCommand();
     }
 
-    public void setError(int errorCode){
-
-        this.errorCode = errorCode;
-    }
-
     public void setError(int errorCode, String errorMessage){
 
         this.errorCode = errorCode;
-        this.errorMessage = errorMessage;
+
+        if (!errorMessage.isEmpty()){
+
+            this.errorMessage = errorMessage;
+            responseObject.put("error", errorMessage);
+        }
+    }
+
+    public void setError(int errorCode){
+
+        setError(errorCode, "");
     }
 
     public void setInput(String inputString){
@@ -209,6 +210,9 @@ public class Command {
         return errorMessage;
     }
 
+
+    //TODO: Refactor below so this code can be reused for Profile option parsing.
+
     private String getResponseValue(String name, int index){
 
         if (!completed || (index >= 0 && !isTable) || (index < 0 && isTable)){
@@ -270,11 +274,12 @@ public class Command {
         return getResponseValueAsBoolean(name, -1);
     }
 
+
     protected void completeCommand(){
 
         completed = true;
 
-        if (errorCode > 0){
+        if (errorCode > 0 && errorMessage.isEmpty()){
 
             errorMessage = getResponseValue("error");
         }

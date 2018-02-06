@@ -13,18 +13,18 @@ public class Event {
 
         awakening,
         autoShutdown,
-        alarm,
-        eventReserved2,
+        smartAlarm,
+        eventReserved1,
 
+        eventReserved2,
         eventReserved3,
         eventReserved4,
         eventReserved5,
-        eventReserved6,
 
+        eventReserved6,
         eventReserved7,
         eventReserved8,
         eventReserved9,
-        eventReserved10,
 
         buttonMonitor,
         sdcardMonitor,
@@ -33,12 +33,12 @@ public class Event {
 
         buzzMonitor,
         ledMonitor,
+        profileMonitor,
+        eventReserved10,
+
         eventReserved11,
         eventReserved12,
-
-        bleMonitor,
-        bleNotify,
-        bleIndicate,
+        eventReserved13,
         clockAlarmFire,
 
         clockTimer0Fire,

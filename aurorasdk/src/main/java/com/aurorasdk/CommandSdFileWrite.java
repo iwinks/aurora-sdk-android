@@ -36,9 +36,10 @@ public class CommandSdFileWrite extends Command {
         }
         catch (Exception exception){
 
-            Log.w("CommandSdFileWrite", "Exception: " + exception.getMessage());
+            Logger.w("CommandSdFileWrite Exception: " + exception.getMessage());
 
             setError(-3, "Compression failed.");
+
             return;
         }
 

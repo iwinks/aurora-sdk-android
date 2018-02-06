@@ -1,7 +1,5 @@
 package com.aurorasdk;
 
-import android.util.Log;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -15,7 +13,7 @@ import java.util.Map;
  * Created by jayalfredprufrock on 1/22/18.
  */
 
-public class CommandResponseParser {
+class CommandResponseParser {
 
     private final Map<String, String> responseObject = new HashMap<>();
     private final List<Map<String, String>> responseTable = new ArrayList<>();
@@ -25,7 +23,7 @@ public class CommandResponseParser {
     private boolean isTable;
     private boolean hasOutput;
 
-    public void reset(){
+    void reset(){
 
         isTable = false;
         hasOutput = false;
@@ -35,21 +33,21 @@ public class CommandResponseParser {
         responseOutput.reset();
     }
 
-    public void parseObjectLine(String line){
-
-        Log.w("CommandResponseParser", "parseObjectLine: " + line);
+    boolean parseObjectLine(String line){
 
         String[] keyAndValue = line.trim().split("\\s*:\\s*", 2);
 
         if (keyAndValue.length != 2 || isTable){
 
-            //throw new Exception("Error parsing response object.");
+            return false;
         }
 
         responseObject.put(Utility.getCamelCasedString(keyAndValue[0]), keyAndValue[1]);
+
+        return true;
     }
 
-    public void parseTableLine(String line){
+    boolean parseTableLine(String line){
 
         String[] values = line.trim().split("\\s*\\|\\s*");
 
@@ -57,12 +55,13 @@ public class CommandResponseParser {
 
             isTable = true;
             responseColumns.addAll(Arrays.asList(values));
-            return;
+
+            return true;
         }
 
         if (values.length != responseColumns.size() || responseObject.size() != 0){
 
-            //throw new Exception("Error parsing response table.");
+            return false;
         }
 
         Map<String, String> responseTableRow = new HashMap<>();
@@ -72,35 +71,37 @@ public class CommandResponseParser {
         }
 
         responseTable.add(responseTableRow);
+
+        return true;
     }
 
-    public void parseOutput(byte[] output) throws IOException {
+    void parseOutput(byte[] output) throws IOException {
 
         hasOutput = true;
         responseOutput.write(output);
     }
 
-    public Map<String, String> getResponseObject(){
+    Map<String, String> getResponseObject(){
 
         return new HashMap<>(responseObject);
     }
 
-    public List<Map<String, String>> getResponseTable(){
+    List<Map<String, String>> getResponseTable(){
 
         return new ArrayList<>(responseTable);
     }
 
-    public byte[] getResponseOutput(){
+    byte[] getResponseOutput(){
 
         return responseOutput.toByteArray().clone();
     }
 
-    public boolean isTable(){
+    boolean isTable(){
 
         return isTable && responseTable.size() > 0;
     }
 
-    public boolean hasOutput(){
+    boolean hasOutput(){
 
         return hasOutput;
     }

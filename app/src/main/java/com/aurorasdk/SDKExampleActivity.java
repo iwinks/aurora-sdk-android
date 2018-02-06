@@ -19,7 +19,7 @@ import java.util.List;
 public class SDKExampleActivity extends AppCompatActivity {
 
     private final static String TAG = SDKExampleActivity.class.getSimpleName();
-    
+
     private final int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
 
     private TextView txt_status;
@@ -58,7 +58,9 @@ public class SDKExampleActivity extends AppCompatActivity {
             }
         }
 
-        aurora = Aurora.create(this, this::onConnectionStateChange);
+        aurora = Aurora.create(this, this::onConnectionStateChange, this::onError);
+
+        aurora.setDebug(true);
     }
 
 
@@ -147,7 +149,7 @@ public class SDKExampleActivity extends AppCompatActivity {
 
                 Profile profile = new Profile(readCmd.getResponseOutputString());
 
-                //profile.setOptionValue("stim-enabled", profile.getOptions().get("stim-enabled") == "0" ? "1" : "0");
+                profile.setOptionValue("stim-enabled", profile.getOptions().get("stim-enabled") == "0" ? "1" : "0");
 
                 queueCommand(new CommandSdFileWrite("profiles/default.prof", profile.toString()));
             }
@@ -303,6 +305,11 @@ public class SDKExampleActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             txt_event.setText(event.toString());
         });
+    }
+
+    private void onError(Aurora.ErrorType errorType, String errorMessage){
+
+        showMsg(errorType.name() + ": " + errorMessage);
     }
 
 }

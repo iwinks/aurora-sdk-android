@@ -12,16 +12,14 @@ import java.util.UUID;
 
 import com.polidea.rxandroidble.RxBleClient;
 import com.polidea.rxandroidble.RxBleScanResult;
-import com.polidea.rxandroidble.internal.RxBleLog;
 import com.polidea.rxandroidble.RxBleDevice;
 import com.polidea.rxandroidble.RxBleConnection;
 import com.polidea.rxandroidble.exceptions.BleScanException;
+import com.polidea.rxandroidble.internal.RxBleLog;
 import com.polidea.rxandroidble.utils.ConnectionSharingAdapter;
 import com.polidea.rxandroidble.scan.ScanFilter;
 import com.polidea.rxandroidble.scan.ScanResult;
 import com.polidea.rxandroidble.scan.ScanSettings;
-
-import android.util.Log;
 
 import rx.Observable;
 import rx.Subscription;
@@ -34,6 +32,10 @@ public class Aurora {
         IDLE, SCANNING, CONNECTING, CONNECTED, DISCONNECTING, DISCONNECTED, RECONNECTING
     }
 
+    public enum ErrorType {
+        SCAN_ERROR, NOTIFICATION_ERROR, ATTRIBUTE_WRITE_ERROR, ATTRIBUTE_READ_ERROR
+    }
+
     public interface ConnectionListener{
         void onConnectionStateChange(ConnectionState connectionState);
     }
@@ -44,7 +46,7 @@ public class Aurora {
         void onEvent(Event event);
     }
     public interface ErrorListener{
-        void onError(int errorCode, String errorMessage);
+        void onError(ErrorType errorType, String errorMessage);
     }
 
     private RxBleClient rxBleClient;
@@ -71,13 +73,12 @@ public class Aurora {
     private Subscription connectSubscription;
     private Subscription connectionStateSubscription;
 
-    private static Aurora instance = null;
+    private static Aurora instance;
 
     private final EnumSet<Event.EventType> enabledEventTypes = EnumSet.noneOf(Event.EventType.class);
 
     private Aurora(){
 
-        RxBleClient.setLogLevel(RxBleLog.VERBOSE);
         connectionState = ConnectionState.IDLE;
 
         commandProcessor = new CommandProcessor(
@@ -121,13 +122,25 @@ public class Aurora {
     ------------------------------------------------------------------------------------------------
     */
 
+    public void setDebug(boolean debug){
+
+        Logger.setDebug(debug);
+
+        if (debug){
+
+            RxBleClient.setLogLevel(RxBleLog.VERBOSE);
+        }
+        else {
+
+            RxBleClient.setLogLevel(RxBleLog.NONE);
+        }
+    }
+
     public void startScan(ScanListener scanListener){
 
         this.scanListener = scanListener;
 
         if (connectionState == ConnectionState.IDLE || connectionState == ConnectionState.DISCONNECTED) {
-
-            Log.w("Aurora", "startScan()");
 
             scanResults.clear();
 
@@ -136,8 +149,6 @@ public class Aurora {
             setConnectionState(reconnecting ? ConnectionState.RECONNECTING : ConnectionState.SCANNING);
 
             if (scanObservable == null) {
-
-                Log.w("Aurora", "creating scanObservable");
 
                 scanObservable = rxBleClient.scanBleDevices(
                         new ScanSettings.Builder()
@@ -162,8 +173,6 @@ public class Aurora {
 
     public void stopScan(){
 
-        Log.w("Aurora", "stopScan()");
-
         scanListener = null;
 
         //move back to idle state if we haven't established a connection
@@ -174,15 +183,12 @@ public class Aurora {
 
         if (scanSubscription != null && !scanSubscription.isUnsubscribed()) {
 
-            Log.w("Aurora", "Unsubscribing from scan.");
             scanSubscription.unsubscribe();
         }
     }
 
 
     public void connect(RxBleScanResult scanResult, Command.CommandCompletionListener commandCompletionListener){
-
-        Log.w("Aurora", "connect()");
 
         this.commandCompletionListener = commandCompletionListener;
 
@@ -213,14 +219,11 @@ public class Aurora {
 
     public void disconnect(){
 
-        Log.w("Aurora", "disconnect()");
-
         autoConnect = false;
         explicitDisconnect = true;
 
         if (connectSubscription != null && !connectSubscription.isUnsubscribed()) {
 
-            Log.w("Aurora", "Unsubscribing from connect.");
             connectSubscription.unsubscribe();
         }
         else {
@@ -237,6 +240,8 @@ public class Aurora {
 
 
     public Command queueCommand(Command command, Command.CommandCompletionListener listener) throws UnsupportedOperationException {
+
+        Logger.d("queueCommand: " + command.getCommandString());
 
         if (!isConnected()){
 
@@ -310,7 +315,7 @@ public class Aurora {
 
     private void sendCommand(Command command){
 
-        Log.w("Aurora", "Sending command: " + command.getCommandString());
+        Logger.d("sendCommand: " + command.getCommandString());
 
         connectObservable.flatMap(rxBleConnection -> Observable.merge(
                 rxBleConnection.writeCharacteristic(Constants.COMMAND_STATUS_UUID.getUuid(), new byte[] { (byte)CommandProcessor.CommandState.IDlE.ordinal()}),
@@ -319,26 +324,28 @@ public class Aurora {
         ))
         .take(3)
         .subscribe(
-                bytes -> Log.w("Aurora", "Write cmd success: " + bytes.toString()),
-                throwable -> Log.w("Aurora", "Write cmd failure: " + throwable)
+                bytes -> Logger.d("sendCommand: attributes written successfully."),
+                throwable -> sendError(ErrorType.ATTRIBUTE_WRITE_ERROR, throwable.getMessage())
         );
     }
 
     private void writeCommandInput(byte[] data){
 
-        Log.w("Aurora", "writeCommandInput: " + data.toString());
+        Logger.d("writeCommandInput: " + data.toString());
 
         connectObservable.flatMap(
             rxBleConnection -> rxBleConnection.writeCharacteristic(Constants.COMMAND_DATA_UUID.getUuid(), data)
         )
         .take(1)
         .subscribe(
-            bytes -> Log.w("Aurora", "Write input success: " + bytes.toString()),
-            throwable -> Log.w("Aurora", "Write input failure: " + throwable)
+            bytes -> Logger.d("writeCommandInput: attribute written successfully."),
+            throwable -> sendError(ErrorType.ATTRIBUTE_WRITE_ERROR, throwable.getMessage())
         );
     }
 
     private void readCommandResponse(int numBytes){
+
+        Logger.d("readCommandResponse: " + numBytes);
 
         final ByteBuffer readBuffer = ByteBuffer.allocate(numBytes);
 
@@ -353,12 +360,14 @@ public class Aurora {
         )
         .take(1)
         .subscribe(
-                buffer -> commandProcessor.processCommandResponse(buffer.array()),
-                throwable -> Log.w("Aurora", "Read command response failure: " + throwable)
+            buffer -> commandProcessor.processCommandResponse(buffer.array()),
+            throwable -> sendError(ErrorType.ATTRIBUTE_READ_ERROR, throwable.getMessage())
         );
     }
 
     private void connectAndSubscribeToNotifications(RxBleDevice rxBleDevice){
+
+        Logger.d("connectAndSubscribeToNotifications: " + rxBleDevice.getMacAddress());
 
         this.rxBleDevice = rxBleDevice;
 
@@ -397,7 +406,7 @@ public class Aurora {
 
     private void setConnectionState(ConnectionState _connectionState){
 
-        Log.w("Aurora", "setConnectionState: " + _connectionState);
+        Logger.d("setConnectionState: " + _connectionState.name());
 
         if (connectionListener != null && connectionState != _connectionState){
 
@@ -407,7 +416,15 @@ public class Aurora {
 
     }
 
+    private void sendError(ErrorType errorType, String errorMessage){
 
+        if (errorListener != null){
+
+            errorListener.onError(errorType, errorMessage);
+        }
+
+        Logger.e(errorType.name() + ": " + errorMessage);
+    }
 
     /* Event Handlers
     ------------------------------------------------------------------------------------------------
@@ -415,13 +432,14 @@ public class Aurora {
 
     private void onScanResult(ScanResult bleScanResult) {
 
-        Log.w("Aurora", "Device found: " + bleScanResult.getBleDevice().getMacAddress());
+        RxBleDevice bleDevice = bleScanResult.getBleDevice();
+        Logger.d("onScanResult: " + bleDevice.getMacAddress());
 
         boolean scanResultAlreadyExists = false;
 
         for (int i = 0; i < scanResults.size(); i++) {
 
-            if (scanResults.get(i).getBleDevice().equals(bleScanResult.getBleDevice())) {
+            if (scanResults.get(i).getBleDevice().equals(bleDevice)) {
 
                 scanResults.set(i, bleScanResult);
                 scanResultAlreadyExists = true;
@@ -435,12 +453,12 @@ public class Aurora {
 
         if (autoConnect || connectionState == ConnectionState.RECONNECTING){
 
-            if (connectionState == ConnectionState.RECONNECTING && !bleScanResult.getBleDevice().equals(rxBleDevice)){
+            if (connectionState == ConnectionState.RECONNECTING && !bleDevice.equals(rxBleDevice)){
 
                 return;
             }
 
-            connectAndSubscribeToNotifications(bleScanResult.getBleDevice());
+            connectAndSubscribeToNotifications(bleDevice);
         }
         else if (scanListener != null){
 
@@ -494,7 +512,7 @@ public class Aurora {
                     break;
             }
 
-            Log.w("EXCEPTION", text, bleScanException);
+            sendError(ErrorType.SCAN_ERROR, text);
 
             setConnectionState(ConnectionState.IDLE);
         }
@@ -502,7 +520,7 @@ public class Aurora {
 
     private void onConnectionStateChange(RxBleConnection.RxBleConnectionState connectionState) {
 
-        Log.w("Aurora", "onConnectionStateChange: " + connectionState.toString());
+        Logger.d("onConnectionStateChange: " + connectionState.toString());
 
         switch (connectionState){
 
@@ -532,6 +550,7 @@ public class Aurora {
                 //if not, we should try to reconnect automatically
                 if (!explicitDisconnect){
 
+                    commandProcessor.resetWithError(-1, "Unexpected disconnect.");
                     startScan();
                 }
 
@@ -543,8 +562,6 @@ public class Aurora {
 
         String charString = charAndValue.first.toString();
         byte[] value = charAndValue.second;
-
-        Log.w("Aurora", "Char: " + charString + " | value: " + value);
 
         //this gets called at a high frequency
         //so the switch cases have been ordered by
@@ -568,7 +585,6 @@ public class Aurora {
 
                     commandProcessor.setCommandState(CommandProcessor.CommandState.INPUT_REQUESTED);
                     commandProcessor.requestInput(value[1]);
-
                 }
                 else if (value[0] == 2 || value[0] == 3){
 
@@ -599,21 +615,22 @@ public class Aurora {
 
                     } catch (Exception e) {
 
-                        Log.w("Aurora", "Unknown event received.");
+                        Logger.w("Unknown event received: " + eventId);
                     }
                 }
 
                 break;
 
             default:
-                Log.w("Aurora", "Unknown Char: " + charString);
+                Logger.w("Unknown notification characteristic: " + charString);
                 break;
 
         }
     }
 
     private void onAuroraNotificationError(Throwable throwable){
-        Log.w("Aurora", "Notification failure: " + throwable);
+
+        sendError(ErrorType.NOTIFICATION_ERROR, "Notification failure: " + throwable.getMessage());
     }
 
 }

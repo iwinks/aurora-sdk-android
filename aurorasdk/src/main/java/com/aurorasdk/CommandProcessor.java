@@ -1,11 +1,14 @@
 package com.aurorasdk;
-import android.util.Log;
 
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public class CommandProcessor {
+class CommandProcessor {
 
     public enum CommandState {
         IDlE, EXECUTE, RESPONSE_OBJECT_READY, RESPONSE_TABLE_READY, INPUT_REQUESTED
@@ -27,41 +30,62 @@ public class CommandProcessor {
 
     private CommandExecutor commandExecutor;
 
+    private  final ScheduledExecutorService timeoutExecutor;
+    private Future timeoutFuture;
+    private final CommandTimeout commandTimeout;
+
     public interface CommandInputWriter {
         void writeCommandInput(byte[] data);
     }
     private CommandInputWriter commandInputWriter;
 
-    public CommandProcessor(CommandExecutor commandExecutor, CommandInputWriter commandInputWriter){
+    CommandProcessor(CommandExecutor commandExecutor, CommandInputWriter commandInputWriter){
 
         this.commandExecutor = commandExecutor;
         this.commandInputWriter = commandInputWriter;
 
+        timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
+        commandTimeout = new CommandTimeout(this::onCommandTimeout);
+
         reset();
     }
 
-    public void queueCommand(Command command){
+    void queueCommand(Command command){
 
         commandQueue.add(command);
 
-        if (commandState == CommandState.IDlE){
-
-            processCommandQueue();
-        }
+        if (commandState == CommandState.IDlE) processCommandQueue();
     }
 
-    public void reset(){
+    void reset(){
 
         commandState = CommandState.IDlE;
 
         commandQueue.clear();
         responsesPendingCount = 0;
         idlePending = false;
+
+        resetCommandTimeout(0);
     }
 
-    public void setCommandState(CommandState commandState, int statusInfo){
+    void resetWithError(int errorCode, String errorMessage){
 
-        Log.w("CommandProcessor", "setCommandState: " + commandState + " Info: " + statusInfo);
+        Logger.e("commandProcessor.resetWithError: " + errorMessage);
+
+        for (Command command : commandQueue) {
+
+            command.setError(errorCode, errorMessage);
+            command.completeCommand();
+        }
+
+        reset();
+    }
+
+    void setCommandState(CommandState commandState, int statusInfo){
+
+        Logger.d("commandProcessor.setCommandState: " + commandState + " | Info: " + statusInfo);
+
+        resetCommandTimeout(Constants.COMMAND_TIMEOUT_MS);
 
         switch (commandState){
 
@@ -80,11 +104,13 @@ public class CommandProcessor {
                     if (responsesPendingCount > 0) {
 
                         idlePending = true;
-                        Log.w("CommandProcessor", "IDLE state pending.");
+                        Logger.d("CommandProcessor: IDLE state pending.");
                         return;
                     }
 
                     idlePending = false;
+
+                    resetCommandTimeout(0);
 
                     completeCommand();
                 }
@@ -101,33 +127,37 @@ public class CommandProcessor {
         this.commandState = commandState;
     }
 
-    public void setCommandState(CommandState commandState){
+    void setCommandState(CommandState commandState){
 
         setCommandState(commandState, 0);
     }
 
-    public void processCommandResponse(byte[] data){
+    void processCommandResponse(byte[] data) {
 
         String line = new String(data);
 
-        Log.w("CommandProcessor", "Command Response: " + line);
+        Logger.d("commandProcessor.processCommandResponse: " + line);
 
         if (commandState == CommandState.RESPONSE_OBJECT_READY){
 
-            commandResponseParser.parseObjectLine(line);
+            if (!commandResponseParser.parseObjectLine(line)){
+
+                Logger.w("commandProcessor.processCommandResponse: Failed parsing object line.");
+            }
         }
         else if (commandState == CommandState.RESPONSE_TABLE_READY){
 
-            commandResponseParser.parseTableLine(line);
+            if (!commandResponseParser.parseTableLine(line)){
+
+                Logger.w("commandProcessor.processCommandResponse: Failed parsing table line.");
+            }
         }
         else {
 
-            //throw new Exception("Invalid command state to process response.");
+            return;
         }
 
         responsesPendingCount--;
-
-        Log.w("CommandProcessor", "Responses pending: " + responsesPendingCount);
 
         if (idlePending && responsesPendingCount == 0){
 
@@ -135,7 +165,7 @@ public class CommandProcessor {
         }
     }
 
-    public void processCommandOutput(byte[] data){
+    void processCommandOutput(byte[] data){
 
         try {
 
@@ -148,12 +178,7 @@ public class CommandProcessor {
         }
     }
 
-    public void requestInput(int maxBytes){
-
-        if (commandState != CommandState.INPUT_REQUESTED) {
-
-            //throw new Exception("Invalid command state to process response.");
-        }
+    void requestInput(int maxBytes) {
 
         //fetch input from currentCommand and call
         byte[] input = currentCommand.getInputBytes(maxBytes);
@@ -170,18 +195,18 @@ public class CommandProcessor {
 
             currentCommand.setResponseOutput(commandResponseParser.getResponseOutput());
 
-            Log.w("CommandProcessor", "Command response output: " + currentCommand.getResponseOutput());
+            Logger.d("CommandProcessor command response output: " + currentCommand.getResponseOutputString());
         }
 
         if (commandResponseParser.isTable()){
 
             currentCommand.setResponseTable(commandResponseParser.getResponseTable());
-            Log.w("CommandProcessor", "Command response table: " + currentCommand.getResponseTable().toString());
+            Logger.d("CommandProcessor command response table: " + currentCommand.getResponseTable().toString());
         }
         else {
 
             currentCommand.setResponseObject(commandResponseParser.getResponseObject());
-            Log.w("CommandProcessor", "Command response object: " + currentCommand.getResponseObject().toString());
+            Logger.d("CommandProcessor command response table: " + currentCommand.getResponseObject().toString());
         }
 
         commandResponseParser.reset();
@@ -190,15 +215,7 @@ public class CommandProcessor {
         processCommandQueue();
     }
 
-    private void processCommandQueue(){
-
-        Log.w("CommandProcessor", "processCommandQueue");
-
-        if (commandState == CommandState.EXECUTE){
-
-            //TODO handle this case, probably emit
-            //an error to the currentCommand
-        }
+    private void processCommandQueue() {
 
         currentCommand = commandQueue.poll();
 
@@ -206,8 +223,6 @@ public class CommandProcessor {
 
             return;
         }
-
-        Log.w("CommandProcessor", "command: " + currentCommand.toString());
 
         //we need to check for error here in case the command
         //performed some initialization within its constructor
@@ -220,6 +235,28 @@ public class CommandProcessor {
 
         setCommandState(CommandState.EXECUTE);
         commandExecutor.executeCommand(currentCommand);
+    }
+
+    private void resetCommandTimeout(long timeoutMs){
+
+        if (timeoutFuture != null)
+        {
+            timeoutFuture.cancel(true);
+        }
+
+        if (timeoutMs > 0){
+
+            timeoutFuture = timeoutExecutor.schedule(commandTimeout, timeoutMs, TimeUnit.MILLISECONDS);
+        }
+
+    }
+
+    private void onCommandTimeout(){
+
+        currentCommand.setError(-4, "Command timed out.");
+        currentCommand.completeCommand();
+
+        resetWithError(-5, "Previous command timed out.");
     }
 }
 

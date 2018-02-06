@@ -42,14 +42,21 @@ public class Profile {
         return options;
     }
 
-    public void setOptionValue(String option, String value){
+    public boolean setOptionValue(String option, String value){
 
-        if (options.containsKey(option) && !options.get(option).equals(value)){
+        if (!options.containsKey(option)){
+
+            return false;
+        }
+
+        if (!options.get(option).equals(value)){
 
             options.put(option, value);
 
             content = content.replaceAll("\\{\\s*" + Pattern.quote(option) + "\\s*:\\s*(.*)\\}", "{" + option + ":" + value + "}");
         }
+
+        return true;
     }
 
     public String toString(){

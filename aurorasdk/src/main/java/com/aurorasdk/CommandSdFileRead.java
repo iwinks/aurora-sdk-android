@@ -43,7 +43,9 @@ public class CommandSdFileRead extends Command {
             }
             catch (IOException exception){
 
+                Logger.w("CommandSdFileRead Exception: " + exception.getMessage());
                 setError(-2, "Decompression failed.");
+
                 super.completeCommand();
                 return;
             }
