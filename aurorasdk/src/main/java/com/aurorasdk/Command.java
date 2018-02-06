@@ -43,11 +43,11 @@ public class Command {
         this.commandString = commandString;
     }
 
-    public void setResponseTable(List<Map<String, String>> responseTable){
+    public void setResponseTable(List<Map<String, String>> responseTable) throws Exception {
 
         if (completed){
 
-            //throw new Exception("This command has already been completed.");
+            throw new Exception("This command has already been completed.");
         }
 
         isTable = true;
@@ -57,14 +57,11 @@ public class Command {
         completeCommand();
     }
 
-    public void setResponseObject(Map<String, String> responseObject){
-
-        Log.w("Command", responseObject.toString());
+    public void setResponseObject(Map<String, String> responseObject) throws Exception {
 
         if (completed){
 
-            //throw new Exception("This command has already been completed.");
-            Log.w("Command", "This command has already been completed.");
+            throw new Exception("This command has already been completed.");
         }
 
         this.responseObject = responseObject;
@@ -72,7 +69,7 @@ public class Command {
         completeCommand();
     }
 
-    public void setError(int errorCode, String errorMessage){
+    public void setError(int errorCode, String errorMessage) {
 
         this.errorCode = errorCode;
 
@@ -83,21 +80,21 @@ public class Command {
         }
     }
 
-    public void setError(int errorCode){
+    public void setError(int errorCode) {
 
         setError(errorCode, "");
     }
 
-    public void setInput(String inputString){
+    public void setInput(String inputString) throws Exception {
 
         setInput(inputString.getBytes(StandardCharsets.UTF_8));
     }
 
-    public void setInput(byte[] bytes){
+    public void setInput(byte[] bytes) throws Exception {
 
         if (completed || input != null){
 
-            //throw new Exception("This command has already been completed.");
+            throw new Exception("This command has already been completed.");
         }
 
         input = ByteBuffer.allocate(bytes.length);
@@ -105,12 +102,11 @@ public class Command {
         input.flip();
     }
 
-    public void setResponseOutput(byte[] responseOutput){
+    public void setResponseOutput(byte[] responseOutput) throws Exception {
 
         if (completed){
 
-            //throw new Exception("This command has already been completed.");
-            Log.w("Command", "This command has already been completed.");
+            throw new Exception("This command has already been completed.");
         }
 
         this.responseOutput = responseOutput;

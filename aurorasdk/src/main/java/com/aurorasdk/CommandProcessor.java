@@ -72,6 +72,11 @@ class CommandProcessor {
 
         Logger.e("commandProcessor.resetWithError: " + errorMessage);
 
+        if (currentCommand != null) {
+            currentCommand.setError(-4, "Command timed out.");
+            currentCommand.completeCommand();
+        }
+
         for (Command command : commandQueue) {
 
             command.setError(errorCode, errorMessage);
@@ -191,22 +196,29 @@ class CommandProcessor {
 
     private void completeCommand(){
 
-        if (commandResponseParser.hasOutput()){
+        try {
 
-            currentCommand.setResponseOutput(commandResponseParser.getResponseOutput());
+            if (commandResponseParser.hasOutput()) {
 
-            Logger.d("CommandProcessor command response output: " + currentCommand.getResponseOutputString());
+                currentCommand.setResponseOutput(commandResponseParser.getResponseOutput());
+
+                Logger.d("CommandProcessor command response output: " + currentCommand.getResponseOutputString());
+            }
+
+            if (commandResponseParser.isTable()) {
+
+                currentCommand.setResponseTable(commandResponseParser.getResponseTable());
+                Logger.d("CommandProcessor command response table: " + currentCommand.getResponseTable().toString());
+
+            } else {
+
+                currentCommand.setResponseObject(commandResponseParser.getResponseObject());
+                Logger.d("CommandProcessor command response table: " + currentCommand.getResponseObject().toString());
+            }
         }
+        catch (Exception exception){
 
-        if (commandResponseParser.isTable()){
-
-            currentCommand.setResponseTable(commandResponseParser.getResponseTable());
-            Logger.d("CommandProcessor command response table: " + currentCommand.getResponseTable().toString());
-        }
-        else {
-
-            currentCommand.setResponseObject(commandResponseParser.getResponseObject());
-            Logger.d("CommandProcessor command response table: " + currentCommand.getResponseObject().toString());
+            resetWithError(-4, "Command already completed.");
         }
 
         commandResponseParser.reset();
@@ -252,9 +264,6 @@ class CommandProcessor {
     }
 
     private void onCommandTimeout(){
-
-        currentCommand.setError(-4, "Command timed out.");
-        currentCommand.completeCommand();
 
         resetWithError(-5, "Previous command timed out.");
     }

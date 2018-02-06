@@ -56,7 +56,13 @@ public class CommandSdFileRead extends Command {
             }
             else {
 
-                setResponseOutput(decompressedOutput.toByteArray());
+                try {
+                    setResponseOutput(decompressedOutput.toByteArray());
+                }
+                catch (Exception exception){
+
+                    Logger.e("CommandSdFileRead Exception: " + exception.getMessage());
+                }
             }
         }
 

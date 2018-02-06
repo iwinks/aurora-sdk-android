@@ -32,6 +32,7 @@ public class CommandSdFileWrite extends Command {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try(HsOutputStream out = new HsOutputStream(baos, COMMAND_COMPRESSION_WINDOW_SIZE, COMMAND_COMPRESSION_LOOKAHEAD_SIZE)) {
+
             out.write(input.getBytes(StandardCharsets.UTF_8));
         }
         catch (Exception exception){
@@ -39,11 +40,15 @@ public class CommandSdFileWrite extends Command {
             Logger.w("CommandSdFileWrite Exception: " + exception.getMessage());
 
             setError(-3, "Compression failed.");
-
-            return;
         }
 
-        setInput(baos.toByteArray());
+        try {
+            setInput(baos.toByteArray());
+        }
+        catch (Exception exception){
+
+            Logger.e("CommandSdFileWrite Exception: " + exception.getMessage());
+        }
     }
 
     public CommandSdFileWrite(String destination, String input){
