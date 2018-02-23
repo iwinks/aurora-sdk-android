@@ -33,7 +33,7 @@ public class Aurora {
     }
 
     public enum ErrorType {
-        SCAN_ERROR, NOTIFICATION_ERROR, ATTRIBUTE_WRITE_ERROR, ATTRIBUTE_READ_ERROR
+        SCAN_ERROR, CONNECTION_ERROR, NOTIFICATION_ERROR, ATTRIBUTE_WRITE_ERROR, ATTRIBUTE_READ_ERROR
     }
 
     public interface ConnectionListener{
@@ -202,7 +202,7 @@ public class Aurora {
         else {
 
             autoConnect = false;
-            connectAndSubscribeToNotifications(scanResult.getBleDevice());
+            establishConnection(scanResult.getBleDevice());
         }
     }
 
@@ -235,7 +235,7 @@ public class Aurora {
 
     public boolean isConnected(){
 
-        return rxBleDevice != null && rxBleDevice.getConnectionState() == RxBleConnection.RxBleConnectionState.CONNECTED;
+        return connectionState == ConnectionState.CONNECTED;
     }
 
 
@@ -365,9 +365,14 @@ public class Aurora {
         );
     }
 
-    private void connectAndSubscribeToNotifications(RxBleDevice rxBleDevice){
+    private void establishConnection(RxBleDevice rxBleDevice){
 
-        Logger.d("connectAndSubscribeToNotifications: " + rxBleDevice.getMacAddress());
+        //we ignore the request to connect if we aren't in a proper state
+        if (connectionState != ConnectionState.IDLE &&
+            connectionState != ConnectionState.SCANNING &&
+            connectionState != ConnectionState.DISCONNECTED) return;
+
+        Logger.d("establishConnection: " + rxBleDevice.getMacAddress());
 
         this.rxBleDevice = rxBleDevice;
 
@@ -381,27 +386,35 @@ public class Aurora {
                 .compose(new ConnectionSharingAdapter())
                 .observeOn(AndroidSchedulers.mainThread());
 
-        connectSubscription = connectObservable.doOnNext(rxBleConnection -> {
+        connectSubscription = connectObservable.subscribe(this::onConnection, this::onConnectionError);
+    }
+
+    private void subscribeToNotifications(){
+
+        if (rxBleDevice != null && rxBleDevice.getConnectionState() == RxBleConnection.RxBleConnectionState.CONNECTED){
+
             explicitDisconnect = false;
             stopScan();
-        })
-        .flatMap(connection -> Observable.merge(
-                Observable.from(
-                        Arrays.asList(
-                                Constants.EVENT_NOTIFIED_UUID.getUuid()
-                        )
-                ).flatMap(characteristic -> connection.setupNotification(characteristic).flatMap(observable -> observable), Pair::new),
-                Observable.from(
-                        Arrays.asList(
-                                Constants.COMMAND_STATUS_UUID.getUuid(),
-                                Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid()
-                        )
-                ).flatMap(characteristic -> connection.setupIndication(characteristic).flatMap(observable -> observable), Pair::new)
-            )
-        )
-        .subscribeOn(Schedulers.io())
-        .observeOn(Schedulers.newThread())
-        .subscribe(this::onAuroraNotification, this::onAuroraNotificationError);
+
+            connectSubscription = connectObservable
+                .flatMap(connection -> Observable.merge(
+                        Observable.from(
+                                Arrays.asList(
+                                        Constants.EVENT_NOTIFIED_UUID.getUuid()
+                                )
+                        ).flatMap(characteristic -> connection.setupNotification(characteristic).flatMap(observable -> observable), Pair::new),
+                        Observable.from(
+                                Arrays.asList(
+                                        Constants.COMMAND_STATUS_UUID.getUuid(),
+                                        Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid()
+                                )
+                        ).flatMap(characteristic -> connection.setupIndication(characteristic).flatMap(observable -> observable), Pair::new))
+                )
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.newThread())
+                .subscribe(this::onAuroraNotification, this::onAuroraNotificationError);
+
+        }
     }
 
     private void setConnectionState(ConnectionState _connectionState){
@@ -458,7 +471,7 @@ public class Aurora {
                 return;
             }
 
-            connectAndSubscribeToNotifications(bleDevice);
+            establishConnection(bleDevice);
         }
         else if (scanListener != null){
 
@@ -516,6 +529,18 @@ public class Aurora {
 
             setConnectionState(ConnectionState.IDLE);
         }
+    }
+
+    private void onConnection(RxBleConnection connection) {
+
+        this.subscribeToNotifications();
+    }
+
+    private void onConnectionError(Throwable throwable) {
+
+        sendError(ErrorType.CONNECTION_ERROR, "Connection error: " + throwable.getMessage());
+
+        setConnectionState(autoConnect ? ConnectionState.SCANNING : ConnectionState.IDLE);
     }
 
     private void onConnectionStateChange(RxBleConnection.RxBleConnectionState connectionState) {
