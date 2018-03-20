@@ -14,7 +14,7 @@ public class Profile {
     private String content;
     private Pattern pattern;
 
-    private final Map<String, String> options = new HashMap<>();
+    private final Map<Option, Object> options = new HashMap<>();
 
     public Profile(String content){
 
@@ -32,31 +32,41 @@ public class Profile {
         Matcher matcher = pattern.matcher(this.content);
 
         while (matcher.find() && matcher.groupCount() == 2) {
-
-            options.put(matcher.group(1), matcher.group(2));
+            options.put(Option.getOption(matcher.group(1)), matcher.group(2));
         }
     }
 
-    public Map<String, String> getOptions(){
+    public Map<Option, Object> getOptions(){
 
         return options;
     }
 
-    public boolean setOptionValue(String option, String value){
+    public void setOptionValue(Option option, String value){
 
-        if (!options.containsKey(option)){
-
-            return false;
-        }
-
-        if (!options.get(option).equals(value)){
+        if (options.containsKey(option) && !options.get(option).equals(value)){
 
             options.put(option, value);
 
-            content = content.replaceAll("\\{\\s*" + Pattern.quote(option) + "\\s*:\\s*(.*)\\}", "{" + option + ":" + value + "}");
+            content = content.replaceAll("\\{\\s*" + Pattern.quote(option.optionName) + "\\s*:\\s*(.*)\\}", "{" + option.optionName + ":" + value + "}");
         }
+    }
 
-        return true;
+    public void setOptionValue(Option option, boolean value){
+        if (options.containsKey(option) && !options.get(option).equals(value ? 1 : 0)){
+
+            options.put(option, value);
+
+            content = content.replaceAll("\\{\\s*" + Pattern.quote(option.optionName) + "\\s*:\\s*(.*)\\}", "{" + option.optionName + ":" + String.valueOf(value ? 1 : 0) + "}");
+        }
+    }
+
+    public void setOptionValue(Option option, long value){
+        if (options.containsKey(option) && !options.get(option).equals(value)){
+
+            options.put(option, value);
+
+            content = content.replaceAll("\\{\\s*" + Pattern.quote(option.optionName) + "\\s*:\\s*(.*)\\}", "{" + option.optionName + ":" + String.valueOf(value) + "}");
+        }
     }
 
     public String toString(){
@@ -64,4 +74,34 @@ public class Profile {
         return content;
     }
 
+    public enum Option {
+        STIM_DELAY("stim-delay"),
+        STIM_INTERVAL("stim-interval"),
+        STIM_ENABLED("stim-enabled"),
+        WAKEUP_WINDOW("wakeup-window"),
+        SMART_ALARM_ENABLED("sa-enabled"),
+        DAWN_STIMULATING_LIGHT("dsl-enabled"),
+        STREAM_DEBUG("stream-debug"),
+        WAKEUP_TIME("wakeup-time");
+
+        private final String optionName;
+
+        Option(String optionName) {
+            this.optionName = optionName;
+        }
+
+        public String getOptionName() {
+            return optionName;
+        }
+
+        public static Option getOption(String optionName){
+            for (Option option : values()){
+                if (option.optionName.equals(optionName)){
+                    return option;
+                }
+            }
+
+            return null;
+        }
+    }
 }

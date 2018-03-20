@@ -653,7 +653,7 @@ public class Aurora {
         }
     }
 
-    private void onAuroraNotificationError(Throwable throwable){
+    private void onAuroraNotificationError(Throwable throwable) {
 
         sendError(ErrorType.NOTIFICATION_ERROR, "Notification failure: " + throwable.getMessage());
     }

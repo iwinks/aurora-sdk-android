@@ -59,6 +59,6 @@ public class CommandSdFileWrite extends Command {
     @Override
     public String getCommandString() {
 
-        return "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 1500 1 " + crc;
+        return "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 3000 1 " + crc;
     }
 }

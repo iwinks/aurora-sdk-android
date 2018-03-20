@@ -19,7 +19,7 @@ public class CommandTimeSync extends Command {
         midnight.set(Calendar.SECOND, 0);
         midnight.set(Calendar.MILLISECOND, 0);
 
-        long msAfterMidnight = now.getTimeInMillis() - midnight.getTimeInMillis();
+        long msAfterMidnight = (now.getTimeInMillis() - midnight.getTimeInMillis());
 
         return "clock-set " + now.get(Calendar.YEAR) + " " + (now.get(Calendar.MONTH)+1) + " " + now.get(Calendar.DAY_OF_MONTH) + " " + msAfterMidnight;
     }
