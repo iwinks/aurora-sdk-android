@@ -52,6 +52,7 @@ class CommandProcessor {
 
     void queueCommand(Command command){
 
+        command.addCompletionListener(this::onCommandComplete);
         commandQueue.add(command);
 
         if (commandState == CommandState.IDlE) processCommandQueue();
@@ -114,8 +115,6 @@ class CommandProcessor {
                     }
 
                     idlePending = false;
-
-                    resetCommandTimeout(0);
 
                     completeCommand();
                 }
@@ -201,30 +200,25 @@ class CommandProcessor {
             if (commandResponseParser.hasOutput()) {
 
                 currentCommand.setResponseOutput(commandResponseParser.getResponseOutput());
-
-                Logger.d("CommandProcessor command response output: " + currentCommand.getResponseOutputString());
             }
 
             if (commandResponseParser.isTable()) {
 
                 currentCommand.setResponseTable(commandResponseParser.getResponseTable());
-                Logger.d("CommandProcessor command response table: " + currentCommand.getResponseTable().toString());
 
             } else {
 
                 currentCommand.setResponseObject(commandResponseParser.getResponseObject());
-                Logger.d("CommandProcessor command response table: " + currentCommand.getResponseObject().toString());
             }
         }
         catch (Exception exception){
 
-            resetWithError(-4, "Command already completed.");
+            resetWithError(-4, "Command already completed: " + exception.getMessage());
         }
 
-        commandResponseParser.reset();
-        currentCommand = null;
+        resetCommandTimeout(0);
 
-        processCommandQueue();
+        commandResponseParser.reset();
     }
 
     private void processCommandQueue() {
@@ -266,6 +260,15 @@ class CommandProcessor {
     private void onCommandTimeout(){
 
         resetWithError(-5, "Previous command timed out.");
+    }
+
+    private void onCommandComplete(Command command){
+
+        Logger.d("onCommandComplete: " + command.getCommandString());
+
+        currentCommand = null;
+
+        processCommandQueue();
     }
 }
 

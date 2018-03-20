@@ -172,12 +172,13 @@ public class SDKExampleActivity extends AppCompatActivity {
     }
 
     public void onLoadProfileClick(View v) {
-        queueCommand("prof-load default.prof");
+
+        queueCommand(new CommandProfileLoad("default.prof"));
     }
 
     public void onUnloadProfileClick(View v)
     {
-        queueCommand("prof-unload");
+        queueCommand(new CommandProfileUnload());
     }
 
     public void onUpdateProfileClick(View v){

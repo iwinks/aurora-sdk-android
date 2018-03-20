@@ -26,11 +26,11 @@ public class Command {
     private byte[] responseOutput;
 
     protected ByteBuffer input;
+    protected boolean completed;
 
     private int errorCode;
     private String errorMessage;
 
-    private boolean completed;
     private boolean isTable;
 
     public void setCommandString(String commandString){
@@ -165,7 +165,7 @@ public class Command {
         if (!completed || responseTable != null){
 
             //throw new Exception("Error retrieving command response as table.");
-            Log.w("Command", "This command has already been completed or is not an object.");
+            Log.w("Command", "This command has not been completed or is not an object.");
         }
 
         return responseObject;
