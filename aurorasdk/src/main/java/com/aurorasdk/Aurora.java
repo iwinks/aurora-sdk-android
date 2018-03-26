@@ -72,6 +72,7 @@ public class Aurora {
     private Subscription scanSubscription;
     private Subscription connectSubscription;
     private Subscription connectionStateSubscription;
+    private Subscription notificationSubscription;
 
     private static Aurora instance;
 
@@ -222,14 +223,9 @@ public class Aurora {
         autoConnect = false;
         explicitDisconnect = true;
 
-        if (connectSubscription != null && !connectSubscription.isUnsubscribed()) {
+        this.stopScan();
 
-            connectSubscription.unsubscribe();
-        }
-        else {
-
-            this.stopScan();
-        }
+        this.triggerDisconnect();
     }
 
 
@@ -370,6 +366,7 @@ public class Aurora {
         //we ignore the request to connect if we aren't in a proper state
         if (connectionState != ConnectionState.IDLE &&
             connectionState != ConnectionState.SCANNING &&
+            connectionState != ConnectionState.RECONNECTING &&
             connectionState != ConnectionState.DISCONNECTED) return;
 
         Logger.d("establishConnection: " + rxBleDevice.getMacAddress());
@@ -377,6 +374,11 @@ public class Aurora {
         this.rxBleDevice = rxBleDevice;
 
         setConnectionState(ConnectionState.CONNECTING);
+
+        if (connectionStateSubscription != null && !connectionStateSubscription.isUnsubscribed()){
+
+            connectionStateSubscription.unsubscribe();
+        }
 
         connectionStateSubscription = rxBleDevice.observeConnectionStateChanges()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -396,7 +398,7 @@ public class Aurora {
             explicitDisconnect = false;
             stopScan();
 
-            connectSubscription = connectObservable
+            notificationSubscription = connectObservable
                 .flatMap(connection -> Observable.merge(
                         Observable.from(
                                 Arrays.asList(
@@ -415,6 +417,7 @@ public class Aurora {
                 .subscribe(this::onAuroraNotification, this::onAuroraNotificationError);
 
         }
+
     }
 
     private void setConnectionState(ConnectionState _connectionState){
@@ -437,6 +440,21 @@ public class Aurora {
         }
 
         Logger.e(errorType.name() + ": " + errorMessage);
+    }
+
+    private void triggerDisconnect(){
+
+        if (notificationSubscription != null && !notificationSubscription.isUnsubscribed()) {
+
+            notificationSubscription.unsubscribe();
+            notificationSubscription = null;
+        }
+
+        if (connectSubscription != null && !connectSubscription.isUnsubscribed()) {
+
+            connectSubscription.unsubscribe();
+            connectSubscription = null;
+        }
     }
 
     /* Event Handlers
@@ -564,17 +582,13 @@ public class Aurora {
 
             case DISCONNECTED:
 
-                if (connectionStateSubscription != null && !connectionStateSubscription.isUnsubscribed()) {
-
-                    connectionStateSubscription.unsubscribe();
-                }
-
                 setConnectionState(ConnectionState.DISCONNECTED);
 
                 //check if this was an explicit disconnect,
                 //if not, we should try to reconnect automatically
                 if (!explicitDisconnect){
 
+                    this.triggerDisconnect();
                     commandProcessor.resetWithError(-1, "Unexpected disconnect.");
                     startScan();
                 }

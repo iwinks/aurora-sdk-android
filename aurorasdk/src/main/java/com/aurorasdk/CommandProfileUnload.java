@@ -27,7 +27,7 @@ public class CommandProfileUnload extends Command {
         if (getResponseValue("message").equalsIgnoreCase("No profile to unload.")){
 
             completed = false;
-            
+
             super.completeCommand();
             return;
         }
