@@ -4,8 +4,8 @@ import android.os.ParcelUuid;
 
 class Constants {
 
-    static final String DREAMBAND_SERVICE_UUID_STRING = "6175726f-7261-454d-af79-42b381af0204";
-    static final ParcelUuid DREAMBAND_SERVICE_UUID = ParcelUuid.fromString(DREAMBAND_SERVICE_UUID_STRING);
+    static final String AURORA_SERVICE_UUID_STRING = "6175726f-7261-454d-af79-42b381af0204";
+    static final ParcelUuid AURORA_SERVICE_UUID = ParcelUuid.fromString(AURORA_SERVICE_UUID_STRING);
 
     static final String COMMAND_DATA_UUID_STRING = "6175726f-7261-49ce-8077-b954b033c880";
     static final ParcelUuid COMMAND_DATA_UUID = ParcelUuid.fromString(COMMAND_DATA_UUID_STRING);

@@ -5,6 +5,7 @@ import android.util.Log;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -76,6 +77,11 @@ public class Command {
         if (!errorMessage.isEmpty()){
 
             this.errorMessage = errorMessage;
+
+            if (responseObject == null){
+                responseObject = new HashMap<>();
+            }
+
             responseObject.put("error", errorMessage);
         }
     }
@@ -282,7 +288,9 @@ public class Command {
 
         for (CommandCompletionListener listener : commandCompletionListeners) {
 
-            listener.onCommandComplete(this);
+            if (listener != null){
+                listener.onCommandComplete(this);
+            }
         }
 
         //remove the reference so they can be garbage collected

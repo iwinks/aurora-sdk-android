@@ -70,6 +70,7 @@ public class SDKExampleActivity extends AppCompatActivity {
 
     public void onStartScanClick(View v) {
 
+
         aurora.startScan(scanResults -> {
 
             if (!aurora.isConnected()){
@@ -78,6 +79,7 @@ public class SDKExampleActivity extends AppCompatActivity {
             }
 
         });
+
     }
 
     public void onStopScanClick(View v)
@@ -337,7 +339,16 @@ public class SDKExampleActivity extends AppCompatActivity {
 
         showMsg(message);
 
-        prgs_bleActive.setVisibility(busy ? View.VISIBLE : View.INVISIBLE);
+        if (busy){
+            runOnUiThread(() -> {
+                prgs_bleActive.setVisibility(View.VISIBLE);
+            });
+        }
+        else {
+            runOnUiThread(() -> {
+                prgs_bleActive.setVisibility(View.INVISIBLE);
+            });
+        }
     }
 
     private void onEvent(Event event){

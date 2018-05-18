@@ -55,6 +55,8 @@ class CommandProcessor {
         command.addCompletionListener(this::onCommandComplete);
         commandQueue.add(command);
 
+        Logger.d("queue command: " + commandState.toString());
+
         if (commandState == CommandState.IDlE) processCommandQueue();
     }
 
@@ -74,6 +76,7 @@ class CommandProcessor {
         Logger.e("commandProcessor.resetWithError: " + errorMessage);
 
         if (currentCommand != null) {
+
             currentCommand.setError(-4, "Command timed out.");
             currentCommand.completeCommand();
         }
@@ -136,9 +139,7 @@ class CommandProcessor {
         setCommandState(commandState, 0);
     }
 
-    void processCommandResponse(byte[] data) {
-
-        String line = new String(data);
+    void processCommandResponseLine(String line) {
 
         Logger.d("commandProcessor.processCommandResponse: " + line);
 

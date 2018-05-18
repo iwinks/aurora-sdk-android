@@ -1,47 +1,37 @@
 package com.aurorasdk;
 
 import android.content.Context;
-import android.support.v4.util.Pair;
+import android.bluetooth.BluetoothDevice;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.UUID;
 
-import com.polidea.rxandroidble.RxBleClient;
-import com.polidea.rxandroidble.RxBleScanResult;
-import com.polidea.rxandroidble.RxBleDevice;
-import com.polidea.rxandroidble.RxBleConnection;
-import com.polidea.rxandroidble.exceptions.BleScanException;
-import com.polidea.rxandroidble.internal.RxBleLog;
-import com.polidea.rxandroidble.utils.ConnectionSharingAdapter;
-import com.polidea.rxandroidble.scan.ScanFilter;
-import com.polidea.rxandroidble.scan.ScanResult;
-import com.polidea.rxandroidble.scan.ScanSettings;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
-
-public class Aurora {
+public class Aurora implements AuroraBleCallbacks {
 
     public enum ConnectionState {
         IDLE, SCANNING, CONNECTING, CONNECTED, DISCONNECTING, DISCONNECTED, RECONNECTING
     }
 
     public enum ErrorType {
-        SCAN_ERROR, CONNECTION_ERROR, NOTIFICATION_ERROR, ATTRIBUTE_WRITE_ERROR, ATTRIBUTE_READ_ERROR
+        NO_BLE_ADAPTER, BLE_DISABLED, NO_PERMISSIONS, SCAN_ERROR, DEVICE_NOT_SUPPORTED,
+        CONNECTION_ERROR, NOTIFICATION_ERROR, ATTRIBUTE_WRITE_ERROR, ATTRIBUTE_READ_ERROR
     }
 
     public interface ConnectionListener{
         void onConnectionStateChange(ConnectionState connectionState);
     }
+
     public interface ScanListener{
-        void onScanResultsChange(List<ScanResult> scanResults);
+        void onScanResultsChange(List<BluetoothDevice> scanResults);
     }
+
+    private ScanListener scanListener;
+
+    private AuroraBleScanner deviceScanner;
+    private AuroraBleConnectionManager connectionManager;
+
     public interface EventListener{
         void onEvent(Event event);
     }
@@ -49,30 +39,17 @@ public class Aurora {
         void onError(ErrorType errorType, String errorMessage);
     }
 
-    private RxBleClient rxBleClient;
-    private RxBleDevice rxBleDevice;
-
     private ConnectionListener connectionListener;
-    private ScanListener scanListener;
     private Command.CommandCompletionListener commandCompletionListener;
     private ErrorListener errorListener;
 
     private ConnectionState connectionState;
     private EventListener eventListener;
 
-    private final List<ScanResult> scanResults = new ArrayList<>();
     private boolean autoConnect;
     private boolean explicitDisconnect;
 
-    private final CommandProcessor commandProcessor;
-
-    private Observable<ScanResult> scanObservable;
-    private Observable<RxBleConnection> connectObservable;
-
-    private Subscription scanSubscription;
-    private Subscription connectSubscription;
-    private Subscription connectionStateSubscription;
-    private Subscription notificationSubscription;
+    private CommandProcessor commandProcessor;
 
     private static Aurora instance;
 
@@ -81,11 +58,6 @@ public class Aurora {
     private Aurora(){
 
         connectionState = ConnectionState.IDLE;
-
-        commandProcessor = new CommandProcessor(
-                this::sendCommand,
-                this::writeCommandInput
-        );
     }
 
     public static Aurora getInstance(){
@@ -102,10 +74,14 @@ public class Aurora {
 
         Aurora instance = getInstance();
 
-        if (instance.rxBleClient == null){
+        instance.deviceScanner = new AuroraBleScanner(context, instance::onScanStatusChange);
+        instance.connectionManager = new AuroraBleConnectionManager(context);
+        instance.connectionManager.setGattCallbacks(instance);
 
-            instance.rxBleClient = RxBleClient.create(context);
-        }
+        instance.commandProcessor = new CommandProcessor(
+                instance.connectionManager::sendCommand,
+                instance.connectionManager::writeCommandInput
+        );
 
         instance.connectionListener = connectionListener;
         instance.errorListener = errorListener;
@@ -126,20 +102,24 @@ public class Aurora {
     public void setDebug(boolean debug){
 
         Logger.setDebug(debug);
-
-        if (debug){
-
-            RxBleClient.setLogLevel(RxBleLog.VERBOSE);
-        }
-        else {
-
-            RxBleClient.setLogLevel(RxBleLog.NONE);
-        }
     }
 
     public void startScan(ScanListener scanListener){
 
-        this.scanListener = scanListener;
+        if (connectionState == ConnectionState.IDLE || connectionState == ConnectionState.DISCONNECTED) {
+
+            this.scanListener = scanListener;
+            deviceScanner.startScan();
+
+            boolean reconnecting = (connectionState == ConnectionState.DISCONNECTED) && !explicitDisconnect;
+
+            setConnectionState(reconnecting ? ConnectionState.RECONNECTING : ConnectionState.SCANNING);
+        }
+
+
+        /*
+
+
 
         if (connectionState == ConnectionState.IDLE || connectionState == ConnectionState.DISCONNECTED) {
 
@@ -148,6 +128,7 @@ public class Aurora {
             boolean reconnecting = (connectionState == ConnectionState.DISCONNECTED) && !explicitDisconnect;
 
             setConnectionState(reconnecting ? ConnectionState.RECONNECTING : ConnectionState.SCANNING);
+
 
             if (scanObservable == null) {
 
@@ -163,7 +144,9 @@ public class Aurora {
             }
 
             scanSubscription = scanObservable.subscribe(this::onScanResult, this::onScanError);
+
         }
+        */
     }
 
     public void startScan(){
@@ -171,10 +154,11 @@ public class Aurora {
         startScan(null);
     }
 
-
     public void stopScan(){
 
         scanListener = null;
+
+        deviceScanner.stopScan();
 
         //move back to idle state if we haven't established a connection
         if (connectionState == ConnectionState.SCANNING || connectionState == ConnectionState.RECONNECTING){
@@ -182,18 +166,20 @@ public class Aurora {
             setConnectionState(ConnectionState.IDLE);
         }
 
+        /*
         if (scanSubscription != null && !scanSubscription.isUnsubscribed()) {
 
             scanSubscription.unsubscribe();
         }
+        */
     }
 
 
-    public void connect(RxBleScanResult scanResult, Command.CommandCompletionListener commandCompletionListener){
+    public void connect(BluetoothDevice device, Command.CommandCompletionListener commandCompletionListener){
 
         this.commandCompletionListener = commandCompletionListener;
 
-        if (scanResult == null){
+        if (device == null){
 
             autoConnect = true;
             this.commandCompletionListener = commandCompletionListener;
@@ -203,9 +189,10 @@ public class Aurora {
         else {
 
             autoConnect = false;
-            establishConnection(scanResult.getBleDevice());
+            connectionManager.connect(device);
         }
     }
+
 
     public void connect(Command.CommandCompletionListener commandCompletionListener){
 
@@ -223,9 +210,8 @@ public class Aurora {
         autoConnect = false;
         explicitDisconnect = true;
 
-        this.stopScan();
-
-        this.triggerDisconnect();
+        stopScan();
+        connectionManager.disconnect();
     }
 
 
@@ -309,117 +295,6 @@ public class Aurora {
     ------------------------------------------------------------------------------------------------
     */
 
-    private void sendCommand(Command command){
-
-        Logger.d("sendCommand: " + command.getCommandString());
-
-        connectObservable.flatMap(rxBleConnection -> Observable.merge(
-                rxBleConnection.writeCharacteristic(Constants.COMMAND_STATUS_UUID.getUuid(), new byte[] { (byte)CommandProcessor.CommandState.IDlE.ordinal()}),
-                rxBleConnection.writeCharacteristic(Constants.COMMAND_DATA_UUID.getUuid(), command.getCommandStringBytes()),
-                rxBleConnection.writeCharacteristic(Constants.COMMAND_STATUS_UUID.getUuid(), new byte[] { (byte)CommandProcessor.CommandState.EXECUTE.ordinal()})
-        ))
-        .take(3)
-        .subscribe(
-                bytes -> Logger.d("sendCommand: attributes written successfully."),
-                throwable -> sendError(ErrorType.ATTRIBUTE_WRITE_ERROR, throwable.getMessage())
-        );
-    }
-
-    private void writeCommandInput(byte[] data){
-
-        Logger.d("writeCommandInput: " + data.toString());
-
-        connectObservable.flatMap(
-            rxBleConnection -> rxBleConnection.writeCharacteristic(Constants.COMMAND_DATA_UUID.getUuid(), data)
-        )
-        .take(1)
-        .subscribe(
-            bytes -> Logger.d("writeCommandInput: attribute written successfully."),
-            throwable -> sendError(ErrorType.ATTRIBUTE_WRITE_ERROR, throwable.getMessage())
-        );
-    }
-
-    private void readCommandResponse(int numBytes){
-
-        Logger.d("readCommandResponse: " + numBytes);
-
-        final ByteBuffer readBuffer = ByteBuffer.allocate(numBytes);
-
-        connectObservable.flatMap(
-            rxBleConnection -> rxBleConnection
-                .readCharacteristic(Constants.COMMAND_DATA_UUID.getUuid())
-                .doOnNext(bytes -> readBuffer.put(bytes))
-                .repeat()
-                .takeUntil(bytes -> readBuffer.remaining() == 0)
-                .filter(bytes -> readBuffer.remaining() == 0)
-                .map(bytes -> readBuffer)
-        )
-        .take(1)
-        .subscribe(
-            buffer -> commandProcessor.processCommandResponse(buffer.array()),
-            throwable -> sendError(ErrorType.ATTRIBUTE_READ_ERROR, throwable.getMessage())
-        );
-    }
-
-    private void establishConnection(RxBleDevice rxBleDevice){
-
-        //we ignore the request to connect if we aren't in a proper state
-        if (connectionState != ConnectionState.IDLE &&
-            connectionState != ConnectionState.SCANNING &&
-            connectionState != ConnectionState.RECONNECTING &&
-            connectionState != ConnectionState.DISCONNECTED) return;
-
-        Logger.d("establishConnection: " + rxBleDevice.getMacAddress());
-
-        this.rxBleDevice = rxBleDevice;
-
-        setConnectionState(ConnectionState.CONNECTING);
-
-        if (connectionStateSubscription != null && !connectionStateSubscription.isUnsubscribed()){
-
-            connectionStateSubscription.unsubscribe();
-        }
-
-        connectionStateSubscription = rxBleDevice.observeConnectionStateChanges()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::onConnectionStateChange);
-
-        connectObservable = rxBleDevice.establishConnection(false)
-                .compose(new ConnectionSharingAdapter())
-                .observeOn(AndroidSchedulers.mainThread());
-
-        connectSubscription = connectObservable.subscribe(this::onConnection, this::onConnectionError);
-    }
-
-    private void subscribeToNotifications(){
-
-        if (rxBleDevice != null && rxBleDevice.getConnectionState() == RxBleConnection.RxBleConnectionState.CONNECTED){
-
-            explicitDisconnect = false;
-            stopScan();
-
-            notificationSubscription = connectObservable
-                .flatMap(connection -> Observable.merge(
-                        Observable.from(
-                                Arrays.asList(
-                                        Constants.EVENT_NOTIFIED_UUID.getUuid()
-                                )
-                        ).flatMap(characteristic -> connection.setupNotification(characteristic).flatMap(observable -> observable), Pair::new),
-                        Observable.from(
-                                Arrays.asList(
-                                        Constants.COMMAND_STATUS_UUID.getUuid(),
-                                        Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid()
-                                )
-                        ).flatMap(characteristic -> connection.setupIndication(characteristic).flatMap(observable -> observable), Pair::new))
-                )
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.newThread())
-                .subscribe(this::onAuroraNotification, this::onAuroraNotificationError);
-
-        }
-
-    }
-
     private void setConnectionState(ConnectionState _connectionState){
 
         Logger.d("setConnectionState: " + _connectionState.name());
@@ -442,234 +317,152 @@ public class Aurora {
         Logger.e(errorType.name() + ": " + errorMessage);
     }
 
-    private void triggerDisconnect(){
-
-        if (notificationSubscription != null && !notificationSubscription.isUnsubscribed()) {
-
-            notificationSubscription.unsubscribe();
-            notificationSubscription = null;
-        }
-
-        if (connectSubscription != null && !connectSubscription.isUnsubscribed()) {
-
-            connectSubscription.unsubscribe();
-            connectSubscription = null;
-        }
-    }
 
     /* Event Handlers
     ------------------------------------------------------------------------------------------------
     */
 
-    private void onScanResult(ScanResult bleScanResult) {
+    private void onScanStatusChange(AuroraBleScanner.ScanStatusType scanStatus, List<BluetoothDevice> scanResults) {
 
-        RxBleDevice bleDevice = bleScanResult.getBleDevice();
-        Logger.d("onScanResult: " + bleDevice.getMacAddress());
+        if (scanStatus == AuroraBleScanner.ScanStatusType.SCAN_RESULTS_CHANGE){
 
-        boolean scanResultAlreadyExists = false;
-
-        for (int i = 0; i < scanResults.size(); i++) {
-
-            if (scanResults.get(i).getBleDevice().equals(bleDevice)) {
-
-                scanResults.set(i, bleScanResult);
-                scanResultAlreadyExists = true;
-            }
-        }
-
-        if (!scanResultAlreadyExists){
-
-            scanResults.add(bleScanResult);
-        }
-
-        if (autoConnect || connectionState == ConnectionState.RECONNECTING){
-
-            if (connectionState == ConnectionState.RECONNECTING && !bleDevice.equals(rxBleDevice)){
-
-                return;
+            if (scanListener != null){
+                scanListener.onScanResultsChange(scanResults);
             }
 
-            establishConnection(bleDevice);
+            if (autoConnect){
+
+                connectionManager.connect(scanResults.get(0));
+            }
+
         }
-        else if (scanListener != null){
+        else {
 
-            scanListener.onScanResultsChange(scanResults);
-        }
-    }
+            switch (scanStatus){
 
-    private void onScanError(Throwable throwable) {
 
-        if (throwable instanceof BleScanException) {
+                case ERROR_NO_ADAPTER:
+                    sendError(ErrorType.NO_BLE_ADAPTER, "No BLE adapter is available.");
+                    break;
 
-            final String text;
-            final BleScanException bleScanException = (BleScanException) throwable;
+                case ERROR_ADAPTER_DISABLED:
+                    sendError(ErrorType.BLE_DISABLED, "BLE not enabled");
+                    break;
 
-            switch (bleScanException.getReason()) {
+                case ERROR_NO_PERMISSIONS:
+                    sendError(ErrorType.NO_PERMISSIONS, "BLE scanning failed. Requires ACCESS_FINE_LOCATION permission.");
+                    break;
 
-                case BleScanException.BLUETOOTH_NOT_AVAILABLE:
-                    text = "Bluetooth is not available";
-                    break;
-                case BleScanException.BLUETOOTH_DISABLED:
-                    text = "Enable bluetooth and try again";
-                    break;
-                case BleScanException.LOCATION_PERMISSION_MISSING:
-                    text = "On Android 6.0 location permission is required. Implement Runtime Permissions";
-                    break;
-                case BleScanException.LOCATION_SERVICES_DISABLED:
-                    text = "Location services needs to be enabled on Android 6.0";
-                    break;
-                case BleScanException.SCAN_FAILED_ALREADY_STARTED:
-                    text = "Scan with the same filters is already started";
-                    break;
-                case BleScanException.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED:
-                    text = "Failed to register application for bluetooth scan";
-                    break;
-                case BleScanException.SCAN_FAILED_FEATURE_UNSUPPORTED:
-                    text = "Scan with specified parameters is not supported";
-                    break;
-                case BleScanException.SCAN_FAILED_INTERNAL_ERROR:
-                    text = "Scan failed due to internal error";
-                    break;
-                case BleScanException.SCAN_FAILED_OUT_OF_HARDWARE_RESOURCES:
-                    text = "Scan cannot start due to limited hardware resources";
-                    break;
-                case BleScanException.UNDOCUMENTED_SCAN_THROTTLE:
-                    text = "Android 7+ requires extra delay between successive scan attempts.";
-                    break;
-                case BleScanException.UNKNOWN_ERROR_CODE:
-                case BleScanException.BLUETOOTH_CANNOT_START:
+                case ERROR_UNKNOWN:
                 default:
-                    text = "Unable to start scanning";
+                    sendError(ErrorType.SCAN_ERROR, "Unknown scanning error.");
                     break;
             }
-
-            sendError(ErrorType.SCAN_ERROR, text);
-
-            setConnectionState(ConnectionState.IDLE);
         }
     }
 
-    private void onConnection(RxBleConnection connection) {
+    @Override
+    public void onDeviceReady(final BluetoothDevice device) {
 
-        this.subscribeToNotifications();
+        setConnectionState(ConnectionState.CONNECTED);
+        stopScan();
     }
 
-    private void onConnectionError(Throwable throwable) {
+    @Override
+    public void onDeviceNotSupported(final BluetoothDevice device) {
 
-        sendError(ErrorType.CONNECTION_ERROR, "Connection error: " + throwable.getMessage());
-
-        setConnectionState(autoConnect ? ConnectionState.SCANNING : ConnectionState.IDLE);
+        setConnectionState(ConnectionState.IDLE);
+        sendError(ErrorType.DEVICE_NOT_SUPPORTED, "Device not supported.");
     }
 
-    private void onConnectionStateChange(RxBleConnection.RxBleConnectionState connectionState) {
+    @Override
+    public void onDeviceConnecting(final BluetoothDevice device) {
 
-        Logger.d("onConnectionStateChange: " + connectionState.toString());
+        if (connectionState != ConnectionState.RECONNECTING){
+            setConnectionState(ConnectionState.CONNECTING);
+        }
 
-        switch (connectionState){
+    }
 
-            case CONNECTING:
-                setConnectionState(ConnectionState.CONNECTING);
-                break;
+    @Override
+    public void onDeviceDisconnecting(final BluetoothDevice device) {
 
-            case CONNECTED:
-                commandProcessor.reset();
-                setConnectionState(ConnectionState.CONNECTED);
-                break;
+        setConnectionState(ConnectionState.DISCONNECTING);
+    }
 
-            case DISCONNECTING:
-                setConnectionState(ConnectionState.DISCONNECTING);
-                break;
+    @Override
+    public void onDeviceDisconnected(final BluetoothDevice device) {
 
-            case DISCONNECTED:
+        setConnectionState(ConnectionState.DISCONNECTED);
+    }
 
-                setConnectionState(ConnectionState.DISCONNECTED);
+    @Override
+    public void onLinklossOccur(final BluetoothDevice device) {
 
-                //check if this was an explicit disconnect,
-                //if not, we should try to reconnect automatically
-                if (!explicitDisconnect){
-
-                    this.triggerDisconnect();
-                    commandProcessor.resetWithError(-1, "Unexpected disconnect.");
-                    startScan();
-                }
-
-                break;
+        if (connectionState == ConnectionState.CONNECTED) {
+            setConnectionState(ConnectionState.RECONNECTING);
         }
     }
 
-    private void onAuroraNotification(Pair<UUID, byte[]> charAndValue){
+    @Override
+    public void onCommandStatusChange(byte statusByte, byte infoByte){
 
-        String charString = charAndValue.first.toString();
-        byte[] value = charAndValue.second;
+        //this gets called a lot...
+        //we hard code the enum values here
+        //to avoid any unnecessary lookups or
+        //array copies and order by the most frequently
+        //emitted status values
 
-        //this gets called at a high frequency
-        //so the switch cases have been ordered by
-        //emission frequency
-        switch (charString){
+        if (statusByte == 4){
 
-            case Constants.COMMAND_OUTPUT_INDICATED_UUID_STRING:
-            case Constants.COMMAND_OUTPUT_NOTIFIED_UUID_STRING:
+            commandProcessor.setCommandState(CommandProcessor.CommandState.INPUT_REQUESTED);
+            commandProcessor.requestInput(infoByte & 0xFF);
+        }
+        else if (statusByte == 2 || statusByte == 3){
 
-                commandProcessor.processCommandOutput(value);
-                break;
+            commandProcessor.setCommandState(statusByte == 2 ?
+                    CommandProcessor.CommandState.RESPONSE_OBJECT_READY : CommandProcessor.CommandState.RESPONSE_TABLE_READY, infoByte
+            );
 
-            case Constants.COMMAND_STATUS_UUID_STRING:
+            connectionManager.readCommandResponse(infoByte & 0xFF);
+        }
+        else if (statusByte == 0){
 
-                //this gets called a lot...
-                //we hard code the enum values here
-                //to avoid any unnecessary lookups or
-                //array copies and order by the most frequently
-                //emitted status values
-                if (value[0] == 4){
+            commandProcessor.setCommandState(CommandProcessor.CommandState.IDlE, infoByte);
+        }
 
-                    commandProcessor.setCommandState(CommandProcessor.CommandState.INPUT_REQUESTED);
-                    commandProcessor.requestInput(value[1]);
-                }
-                else if (value[0] == 2 || value[0] == 3){
+    }
 
-                    commandProcessor.setCommandState(value[0] == 2 ?
-                            CommandProcessor.CommandState.RESPONSE_OBJECT_READY : CommandProcessor.CommandState.RESPONSE_TABLE_READY, value[1]
-                    );
+    @Override
+    public void onCommandOutput(byte[] data){
+        commandProcessor.processCommandOutput(data);
+    }
 
-                    readCommandResponse(value[1]);
-                }
-                else if (value[0] == 0){
+    @Override
+    public void onCommandResponse(String responseLine){
 
-                    commandProcessor.setCommandState(CommandProcessor.CommandState.IDlE, value[1]);
-                }
+        commandProcessor.processCommandResponseLine(responseLine);
+    }
 
-                break;
+    @Override
+    public void onAuroraEvent(int eventId, long flags){
 
-            case Constants.EVENT_NOTIFIED_UUID_STRING:
-            case Constants.EVENT_INDICATED_UUID_STRING:
+        if (eventListener != null) {
 
-                int eventId = value[0];
-                long flags = Utility.getUnsignedInt32(value, 1);
+            try {
 
-                if (eventListener != null) {
+                eventListener.onEvent(new Event(eventId, flags));
 
-                    try {
+            } catch (Exception e) {
 
-                        eventListener.onEvent(new Event(eventId, flags));
-
-                    } catch (Exception e) {
-
-                        Logger.w("Unknown event received: " + eventId);
-                    }
-                }
-
-                break;
-
-            default:
-                Logger.w("Unknown notification characteristic: " + charString);
-                break;
-
+                Logger.w("Unknown event received: " + eventId);
+            }
         }
     }
 
-    private void onAuroraNotificationError(Throwable throwable) {
-
-        sendError(ErrorType.NOTIFICATION_ERROR, "Notification failure: " + throwable.getMessage());
+    @Override
+    public void onError(final BluetoothDevice device, final String message, final int errorCode) {
+        Logger.d("error: " + message);
     }
 
 }

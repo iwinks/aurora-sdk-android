@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import heatshrink.HsInputStream;
-import rx.internal.operators.SingleOnErrorReturn;
 
 import static com.aurorasdk.Constants.COMMAND_COMPRESSION_LOOKAHEAD_SIZE;
 import static com.aurorasdk.Constants.COMMAND_COMPRESSION_WINDOW_SIZE;
