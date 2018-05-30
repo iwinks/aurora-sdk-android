@@ -57,6 +57,13 @@ public class CommandSdFileWrite extends Command {
     }
 
     @Override
+    protected boolean shouldRetry() {
+
+        //a CRC check should allow retries
+        return super.shouldRetry() || getErrorCode() == 50;
+    }
+
+    @Override
     public String getCommandString() {
 
         return "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 1500 1 " + crc;

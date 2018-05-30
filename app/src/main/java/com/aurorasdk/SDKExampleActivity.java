@@ -120,6 +120,13 @@ public class SDKExampleActivity extends AppCompatActivity {
     public void onOsInfoClick(View v){
 
         queueCommand("os-info");
+       /* queueCommand("os-info");
+        queueCommand("os-info");
+        queueCommand("os-info");
+        queueCommand("os-info");
+        queueCommand("os-info");
+        queueCommand("os-info");
+        queueCommand("led-demo");*/
     }
 
     public void onWriteFileClick(View v) {

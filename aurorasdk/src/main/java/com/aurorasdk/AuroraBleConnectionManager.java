@@ -25,7 +25,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
         super(context);
 
-        readBuffers = new ArrayBlockingQueue<ByteBuffer>(3);
+        readBuffers = new ArrayBlockingQueue<ByteBuffer>(5);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             final LinkedList<Request> requests = new LinkedList<>();
             requests.push(Request.newEnableIndicationsRequest(commandStatusChar));
-            requests.push(Request.newEnableNotificationsRequest(commandOutputChar));
+            requests.push(Request.newEnableIndicationsRequest(commandOutputChar));
             requests.push(Request.newEnableNotificationsRequest(eventChar));
             return requests;
         }
@@ -61,7 +61,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             commandStatusChar = service.getCharacteristic(Constants.COMMAND_STATUS_UUID.getUuid());
             commandDataChar = service.getCharacteristic(Constants.COMMAND_DATA_UUID.getUuid());
-            commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_NOTIFIED_UUID.getUuid());
+            commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid());
             eventChar = service.getCharacteristic(Constants.EVENT_NOTIFIED_UUID.getUuid());
 
             return commandStatusChar != null && commandDataChar != null;
@@ -77,11 +77,22 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
         @Override
         protected void onCharacteristicRead(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
 
+            Logger.d("onCharacteristicRead: " + characteristic.getStringValue(0));
+
             if (characteristic == commandDataChar){
 
                 ByteBuffer readBuffer = readBuffers.peek();
 
                 if (readBuffer != null){
+
+                    if (readBuffer.remaining() < characteristic.getValue().length){
+
+                        Logger.e("Command data read buffer only allocated " + readBuffer.capacity() + " bytes.");
+                        Logger.e("Characteristic length: " + characteristic.getValue().length + " Remaining space in buffer:" + readBuffer.remaining());
+
+                        readBuffers.clear();
+                        return;
+                    }
 
                     readBuffer.put(characteristic.getValue());
 
@@ -105,7 +116,6 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
         @Override
         public void onCharacteristicWrite(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
-
 
         }
 
@@ -143,6 +153,8 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
     public void sendCommand(Command command){
 
+        Logger.d("Sending command: " + command.getCommandString());
+
         enqueue(Request.newWriteRequest(commandStatusChar, new byte[] {(byte)CommandProcessor.CommandState.IDlE.ordinal()}));
         enqueue(Request.newWriteRequest(commandDataChar, command.getCommandStringBytes()));
         enqueue(Request.newWriteRequest(commandStatusChar, new byte[] { (byte)CommandProcessor.CommandState.EXECUTE.ordinal()}));
@@ -151,6 +163,9 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
     public void readCommandResponse(int numBytes){
 
         readBuffers.add(ByteBuffer.allocate(numBytes));
+
+        Logger.d("Read requests pending: " + readBuffers.size());
+
         readCharacteristic(commandDataChar);
     }
 

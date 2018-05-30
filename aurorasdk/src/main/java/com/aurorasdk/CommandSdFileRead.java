@@ -67,6 +67,7 @@ public class CommandSdFileRead extends Command {
         }
 
         if (Utility.getCrc(decompressedOutput.toByteArray()) != getResponseValueAsLong("crc")){
+
             setError(-1, "CRC check failed.");
 
             return null;

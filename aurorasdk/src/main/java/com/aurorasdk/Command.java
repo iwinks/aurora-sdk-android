@@ -281,7 +281,7 @@ public class Command {
 
         completed = true;
 
-        if (errorCode > 0 && errorMessage.isEmpty()){
+        if (errorCode > 0 && (errorMessage == null || errorMessage.isEmpty())){
 
             errorMessage = getResponseValue("error");
         }
@@ -294,6 +294,11 @@ public class Command {
         }
 
         //remove the reference so they can be garbage collected
-        commandCompletionListeners.clear();
+        //commandCompletionListeners.clear();
+    }
+
+    protected boolean shouldRetry(){
+
+        return errorCode < 0;
     }
 }
