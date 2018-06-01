@@ -34,5 +34,5 @@ class Constants {
     static final int COMMAND_COMPRESSION_WINDOW_SIZE = 8;
     static final int COMMAND_COMPRESSION_LOOKAHEAD_SIZE = 4;
 
-    static final int COMMAND_TIMEOUT_MS = 6000;
+    static final int COMMAND_TIMEOUT_MS = 3000;
 }

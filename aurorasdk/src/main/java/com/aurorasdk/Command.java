@@ -32,6 +32,8 @@ public class Command {
     private int errorCode;
     private String errorMessage;
 
+    private int retryCount;
+
     private boolean isTable;
 
     public void setCommandString(String commandString){
@@ -54,8 +56,6 @@ public class Command {
         isTable = true;
 
         this.responseTable = responseTable;
-
-        completeCommand();
     }
 
     public void setResponseObject(Map<String, String> responseObject) throws Exception {
@@ -66,8 +66,6 @@ public class Command {
         }
 
         this.responseObject = responseObject;
-
-        completeCommand();
     }
 
     public void setError(int errorCode, String errorMessage) {
@@ -212,6 +210,11 @@ public class Command {
         return errorMessage;
     }
 
+    public int getRetryCount(){
+
+        return  retryCount;
+    }
+
 
     //TODO: Refactor below so this code can be reused for Profile option parsing.
 
@@ -224,9 +227,9 @@ public class Command {
 
         Map<String, String> response = index >= 0 ? responseTable.get(index) : responseObject;
 
-        if (!response.containsKey(name)){
+        if (response == null || !response.containsKey(name)){
 
-            //throw new Exception("Command response key not found.");
+            return "";
         }
 
         return response.get(name);
@@ -279,8 +282,14 @@ public class Command {
 
     protected void completeCommand(){
 
+        if (completed) return;
+
         completed = true;
 
+        //error code > 0 means the actual command response
+        //should contain an error message so go ahead and
+        //set the error message accordingly if we don't already
+        //have one
         if (errorCode > 0 && (errorMessage == null || errorMessage.isEmpty())){
 
             errorMessage = getResponseValue("error");
@@ -292,13 +301,23 @@ public class Command {
                 listener.onCommandComplete(this);
             }
         }
-
-        //remove the reference so they can be garbage collected
-        //commandCompletionListeners.clear();
     }
 
     protected boolean shouldRetry(){
 
-        return errorCode < 0;
+        return errorCode < 0 && retryCount < 3;
+    }
+
+    protected void retry(){
+
+        retryCount++;
+
+        input = null;
+        completed = false;
+        isTable = false;
+        responseObject = null;
+        responseTable = null;
+        errorCode = 0;
+        errorMessage = null;
     }
 }

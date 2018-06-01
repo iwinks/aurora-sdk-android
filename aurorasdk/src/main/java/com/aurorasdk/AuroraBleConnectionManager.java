@@ -77,6 +77,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
         @Override
         protected void onCharacteristicRead(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
 
+            Logger.d("onCharacteristicRead: " + characteristic.getUuid().toString());
             Logger.d("onCharacteristicRead: " + characteristic.getStringValue(0));
 
             if (characteristic == commandDataChar){
@@ -102,8 +103,8 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
                     }
                     else {
 
-                        mCallbacks.onCommandResponse(new String(readBuffer.array()));
                         readBuffers.remove();
+                        mCallbacks.onCommandResponse(new String(readBuffer.array()));
 
                         if (!readBuffers.isEmpty()){
 
@@ -133,6 +134,8 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
         private void onCharacteristic(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic){
 
+            Logger.d("onCharacteristic: " + characteristic.getUuid());
+
             byte[] charValue = characteristic.getValue();
 
             if (characteristic == commandOutputChar){
@@ -154,6 +157,12 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
     public void sendCommand(Command command){
 
         Logger.d("Sending command: " + command.getCommandString());
+
+        ByteBuffer b;
+        while ((b = readBuffers.poll()) != null){
+
+            b.clear();
+        }
 
         enqueue(Request.newWriteRequest(commandStatusChar, new byte[] {(byte)CommandProcessor.CommandState.IDlE.ordinal()}));
         enqueue(Request.newWriteRequest(commandDataChar, command.getCommandStringBytes()));

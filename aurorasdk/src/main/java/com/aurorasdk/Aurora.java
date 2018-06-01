@@ -415,8 +415,7 @@ public class Aurora implements AuroraBleCallbacks {
 
         if (statusByte == 4){
 
-            commandProcessor.setCommandState(CommandProcessor.CommandState.INPUT_REQUESTED);
-            commandProcessor.requestInput(infoByte & 0xFF);
+            commandProcessor.setCommandState(CommandProcessor.CommandState.INPUT_REQUESTED, infoByte & 0xFF);
         }
         else if (statusByte == 2 || statusByte == 3){
 

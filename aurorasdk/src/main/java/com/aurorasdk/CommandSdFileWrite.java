@@ -19,6 +19,7 @@ public class CommandSdFileWrite extends Command {
     private String destination;
     private long crc;
     private boolean renameIfExisting;
+    private ByteArrayOutputStream compressedInput;
 
     public CommandSdFileWrite(String destination, String input, boolean renameIfExisting) {
 
@@ -29,11 +30,11 @@ public class CommandSdFileWrite extends Command {
 
         crc = Utility.getCrc(inputBytes);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        compressedInput = new ByteArrayOutputStream();
 
-        try(HsOutputStream out = new HsOutputStream(baos, COMMAND_COMPRESSION_WINDOW_SIZE, COMMAND_COMPRESSION_LOOKAHEAD_SIZE)) {
+        try(HsOutputStream out = new HsOutputStream(compressedInput, COMMAND_COMPRESSION_WINDOW_SIZE, COMMAND_COMPRESSION_LOOKAHEAD_SIZE)) {
 
-            out.write(input.getBytes(StandardCharsets.UTF_8));
+            out.write(inputBytes);
         }
         catch (Exception exception){
 
@@ -42,13 +43,7 @@ public class CommandSdFileWrite extends Command {
             setError(-3, "Compression failed.");
         }
 
-        try {
-            setInput(baos.toByteArray());
-        }
-        catch (Exception exception){
-
-            Logger.e("CommandSdFileWrite Exception: " + exception.getMessage());
-        }
+        setInput();
     }
 
     public CommandSdFileWrite(String destination, String input){
@@ -60,12 +55,33 @@ public class CommandSdFileWrite extends Command {
     protected boolean shouldRetry() {
 
         //a CRC check should allow retries
-        return super.shouldRetry() || getErrorCode() == 50;
+        return super.shouldRetry() || (getRetryCount() < 3 && getErrorCode() == 49);
+    }
+
+    @Override
+    protected void retry() {
+
+        super.retry();
+        setInput();
     }
 
     @Override
     public String getCommandString() {
 
+        //the read timeout should be less than the command timeout
         return "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 1500 1 " + crc;
+    }
+
+    private void setInput(){
+
+        try {
+            setInput(compressedInput.toByteArray());
+        }
+        catch (Exception exception){
+
+            Logger.e("CommandSdFileWrite Exception: " + exception.getMessage());
+            setError(-9, exception.getMessage());
+        }
+
     }
 }

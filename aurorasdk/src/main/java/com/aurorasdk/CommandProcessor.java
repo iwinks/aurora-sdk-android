@@ -17,8 +17,6 @@ class CommandProcessor {
     private int responsesPendingCount;
     private boolean idlePending;
 
-    private int retryCount;
-
     private CommandState commandState;
 
     private Queue<Command> commandQueue = new ConcurrentLinkedQueue<>();
@@ -54,7 +52,6 @@ class CommandProcessor {
 
     void queueCommand(Command command){
 
-        command.addCompletionListener(this::onCommandComplete);
         commandQueue.add(command);
 
         if (currentCommand == null) processCommandQueue();
@@ -64,45 +61,11 @@ class CommandProcessor {
 
         commandState = CommandState.IDlE;
         currentCommand = null;
-
-        retryCount = 0;
         commandQueue.clear();
         responsesPendingCount = 0;
         idlePending = false;
 
         resetCommandTimeout(0);
-    }
-
-    void retryOrResetWithError(int errorCode, String errorMessage){
-
-        Logger.e("commandProcessor.retryOrResetWithError: " + errorMessage);
-
-        //debug stuff, remove me later
-        if (currentCommand == null){
-
-            Logger.d("command is null in retryOrResetWithError....shouldn't happen.");
-        }
-
-        if (currentCommand != null) {
-
-            if (retryCount < 3){
-
-                retryCount++;
-                retryCurrentCommand();
-                return;
-            }
-
-            currentCommand.setError(-4, "Command timed out.");
-            currentCommand.completeCommand();
-        }
-
-        for (Command command : commandQueue) {
-
-            command.setError(errorCode, errorMessage);
-            command.completeCommand();
-        }
-
-        reset();
     }
 
     void setCommandState(CommandState commandState, int statusInfo){
@@ -112,6 +75,14 @@ class CommandProcessor {
         resetCommandTimeout(Constants.COMMAND_TIMEOUT_MS);
 
         switch (commandState){
+
+            case EXECUTE:
+
+                responsesPendingCount = 0;
+                idlePending = false;
+                commandExecutor.executeCommand(currentCommand);
+
+                break;
 
             case IDlE:
 
@@ -142,6 +113,12 @@ class CommandProcessor {
             case RESPONSE_OBJECT_READY:
             case RESPONSE_TABLE_READY:
                 responsesPendingCount++;
+                break;
+
+            case INPUT_REQUESTED:
+
+                requestInput(statusInfo);
+
                 break;
 
         }
@@ -187,6 +164,8 @@ class CommandProcessor {
 
     void processCommandOutput(byte[] data){
 
+        resetCommandTimeout(Constants.COMMAND_TIMEOUT_MS);
+
         try {
 
             commandResponseParser.parseOutput(data);
@@ -211,6 +190,8 @@ class CommandProcessor {
 
     private void completeCommand(){
 
+        resetCommandTimeout(0);
+
         try {
 
             if (commandResponseParser.hasOutput()) {
@@ -226,22 +207,61 @@ class CommandProcessor {
 
                 currentCommand.setResponseObject(commandResponseParser.getResponseObject());
             }
-        }
-        catch (Exception exception){
+        } catch (Exception exception) {
 
-            exception.printStackTrace();
-            retryOrResetWithError(-4, "Command already completed: " + exception.getMessage());
+            currentCommand.setError(-4, "Error completing command: " + exception.getMessage());
         }
-
-        resetCommandTimeout(0);
 
         commandResponseParser.reset();
+
+        if (currentCommand.hasError()){
+
+            if (currentCommand.shouldRetry()){
+
+                retryCurrentCommand();
+            }
+            else {
+
+                //command failed, so notify its listeners
+                currentCommand.completeCommand();
+
+                //negative error code means non-recoverable
+                //error so cancel all subsequent commands
+                if (currentCommand.getErrorCode() < 0){
+
+                    for (Command command : commandQueue) {
+
+                        command.setError(-7, "Previously queued command failed in a non-recoverable way.");
+                        command.completeCommand();
+                    }
+
+                    //get the system back to
+                    //initial state
+                    reset();
+                }
+                else {
+
+                    //non-fatal error, so continue
+                    //processing commands
+                    processCommandQueue();
+                }
+            }
+        }
+        else {
+
+            //command completed successfully
+            //so notify listeners and continue
+            //processing commands
+            currentCommand.completeCommand();
+            processCommandQueue();
+        }
     }
 
     private void processCommandQueue() {
 
         currentCommand = commandQueue.poll();
 
+        //make sure we actually have a command to process
         if (currentCommand == null) {
 
             return;
@@ -249,16 +269,14 @@ class CommandProcessor {
 
         //we need to check for error here in case the command
         //performed some initialization within its constructor
-        //that lead to an error.
+        //that lead to an immediate error.
         if (currentCommand.hasError()){
 
             currentCommand.completeCommand();
             return;
         }
 
-        retryCount = 0;
         setCommandState(CommandState.EXECUTE);
-        commandExecutor.executeCommand(currentCommand);
     }
 
     private void retryCurrentCommand() {
@@ -270,9 +288,9 @@ class CommandProcessor {
         responsesPendingCount = 0;
         idlePending = false;
         commandResponseParser.reset();
+        currentCommand.retry();
 
         setCommandState(CommandState.EXECUTE);
-        commandExecutor.executeCommand(currentCommand);
     }
 
     private void resetCommandTimeout(long timeoutMs){
@@ -291,16 +309,8 @@ class CommandProcessor {
 
     private void onCommandTimeout(){
 
-        retryOrResetWithError(-5, "Previous command timed out.");
-    }
-
-    private void onCommandComplete(Command command){
-
-        Logger.d("onCommandComplete: " + command.getCommandString());
-
-        currentCommand = null;
-
-        processCommandQueue();
+        currentCommand.setError(-5, "Command timed out.");
+        completeCommand();
     }
 }
 
