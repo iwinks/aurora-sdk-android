@@ -47,7 +47,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             final LinkedList<Request> requests = new LinkedList<>();
             requests.push(Request.newEnableIndicationsRequest(commandStatusChar));
-            requests.push(Request.newEnableIndicationsRequest(commandOutputChar));
+            requests.push(Request.newEnableNotificationsRequest(commandOutputChar));
             requests.push(Request.newEnableNotificationsRequest(eventChar));
             return requests;
         }
@@ -61,7 +61,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             commandStatusChar = service.getCharacteristic(Constants.COMMAND_STATUS_UUID.getUuid());
             commandDataChar = service.getCharacteristic(Constants.COMMAND_DATA_UUID.getUuid());
-            commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid());
+            commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_NOTIFIED_UUID.getUuid());
             eventChar = service.getCharacteristic(Constants.EVENT_NOTIFIED_UUID.getUuid());
 
             return commandStatusChar != null && commandDataChar != null;
