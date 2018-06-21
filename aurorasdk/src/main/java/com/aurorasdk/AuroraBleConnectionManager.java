@@ -91,7 +91,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
                         Logger.e("Command data read buffer only allocated " + readBuffer.capacity() + " bytes.");
                         Logger.e("Characteristic length: " + characteristic.getValue().length + " Remaining space in buffer:" + readBuffer.remaining());
 
-                        readBuffers.clear();
+                        clearReadBuffers();
                         return;
                     }
 
@@ -105,11 +105,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
                         readBuffers.remove();
                         mCallbacks.onCommandResponse(new String(readBuffer.array()));
-
-                        if (!readBuffers.isEmpty()){
-
-                            readCharacteristic(commandDataChar);
-                        }
+                        readBuffer.clear();
                     }
                 }
             }
@@ -158,11 +154,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
         Logger.d("Sending command: " + command.getCommandString());
 
-        ByteBuffer b;
-        while ((b = readBuffers.poll()) != null){
-
-            b.clear();
-        }
+        clearReadBuffers();
 
         enqueue(Request.newWriteRequest(commandStatusChar, new byte[] {(byte)CommandProcessor.CommandState.IDlE.ordinal()}));
         enqueue(Request.newWriteRequest(commandDataChar, command.getCommandStringBytes()));
@@ -173,7 +165,8 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
         readBuffers.add(ByteBuffer.allocate(numBytes));
 
-        Logger.d("Read requests pending: " + readBuffers.size());
+        Logger.d("Requesting a read of " + numBytes + " bytes.");
+        Logger.d("Pending requests: " + readBuffers.size());
 
         readCharacteristic(commandDataChar);
     }
@@ -182,6 +175,15 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
         commandDataChar.setValue(input);
         writeCharacteristic(commandDataChar);
+    }
+
+    private void clearReadBuffers(){
+
+        ByteBuffer b;
+        while ((b = readBuffers.poll()) != null){
+
+            b.clear();
+        }
     }
 
 }
