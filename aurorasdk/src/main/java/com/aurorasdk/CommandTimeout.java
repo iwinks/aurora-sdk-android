@@ -18,7 +18,16 @@ public class CommandTimeout implements Runnable {
 
         if (timeoutHandler != null){
 
-            timeoutHandler.onTimeout();
+            //this try/catch is important, because otherwise
+            //the handler will silently fail if any exception
+            //is thrown...very very confusing
+            try {
+                timeoutHandler.onTimeout();
+            }
+            catch (Exception e){
+
+                e.printStackTrace();
+            }
         }
     }
 }
