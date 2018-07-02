@@ -1,0 +1,61 @@
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+version '1.0.0'
+group 'com.iwinks'
+
+publishing {
+    publications {
+        Production(MavenPublication) {
+            artifact("$buildDir/outputs/aar/aurorasdk-release.aar")
+            groupId
+            artifactId 'aurorasdk'
+            version this.version
+
+            pom.withXml {
+
+                def dependenciesNode = asNode().appendNode('dependencies')
+
+                // Iterate over the implementation dependencies (we don't want the test ones), adding a <dependency> node for each
+                configurations.implementation.allDependencies.each {
+                    // Ensure dependencies such as fileTree are not included.
+                    if (it.name != 'unspecified') {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                    }
+                }
+            }
+        }
+    }
+}
+
+bintray {
+    user = project.hasProperty('bintrayUser') ?: System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ?: System.getenv('BINTRAY_API_KEY')
+    publications = ['Production']
+    configurations = ['archives']
+    override = true
+    publish = true
+    pkg {
+        repo = 'maven'
+        name = 'aurorasdk'
+        description = "Official Android client library for interacting with Aurora Dreamband."
+        publish = true
+        publicDownloadNumbers = true
+        licenses = ['MIT']
+        vcsUrl = 'https://github.com/iwinks/aurora-sdk-android'
+        dryRun = true
+        version {
+            name = this.version
+            desc = "Aurora SDK ${this.version}"
+            released = new Date()
+            vcsTag = this.version
+            gpg {
+                sign = true //Determines whether to GPG sign the files. The default is false
+                passphrase = project.hasProperty('gpgPassphrase') ?: System.getenv('GPG_PASSPHRASE')
+            }
+        }
+    }
+}

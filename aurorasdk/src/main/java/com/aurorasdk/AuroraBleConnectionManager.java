@@ -173,8 +173,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
     public void writeCommandInput(byte[] input){
 
-        commandDataChar.setValue(input);
-        writeCharacteristic(commandDataChar);
+        writeCharacteristic(commandDataChar, input);
     }
 
     private void clearReadBuffers(){

@@ -1,4 +1,4 @@
-package com.aurorasdk;
+package com.aurorasdk.app;
 
 import org.junit.Test;
 

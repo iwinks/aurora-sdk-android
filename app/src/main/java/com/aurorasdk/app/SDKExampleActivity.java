@@ -1,4 +1,14 @@
-package com.aurorasdk;
+package com.aurorasdk.app;
+
+import com.aurorasdk.Aurora;
+import com.aurorasdk.Command;
+import com.aurorasdk.CommandSdFileRead;
+import com.aurorasdk.CommandSdFileWrite;
+import com.aurorasdk.CommandProfileLoad;
+import com.aurorasdk.CommandProfileUnload;
+import com.aurorasdk.CommandTimeSync;
+import com.aurorasdk.Profile;
+import com.aurorasdk.Event;
 
 import android.Manifest;
 import android.content.pm.PackageManager;

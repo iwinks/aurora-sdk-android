@@ -1,42 +1,19 @@
 apply plugin: 'com.android.library'
 
-ext {
-    //For bintray and jcenter distribution
-    bintrayRepo = 'maven'
-    bintrayName = 'aurorasdk'
-
-    publishedGroupId = 'com.iwinks'
-    libraryName = 'Aurora Dreamband SDK'
-    artifact = 'aurorasdk'
-
-    libraryDescription = 'Official SDK for Aurora Dreamband.'
-
-    siteUrl = 'https://github.com/iwinks/aurora-sdk-android'
-    gitUrl = 'https://github.com/iwinks/aurora-sdk-android.git'
-
-    libraryVersion = '1.0.0'
-
-    developerId = 'iwinks'
-    developerName = 'Andrew Smiley'
-    developerEmail = 'andrew@iwinks.org'
-    licenseName = 'MIT'  //Example for license
-    licenseUrl = 'https://opensource.org/licenses/MIT'
-    allLicenses = ["MIT"]
-}
-
 android {
-    compileSdkVersion 25
-    buildToolsVersion '26.0.2'
+    compileSdkVersion 27
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 25
+        targetSdkVersion 27
         versionCode 1
         versionName "1.0"
-        multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
+        versionName project.getProperty("libraryVersion")
     }
+
+
     buildTypes {
         release {
             minifyEnabled false
@@ -52,16 +29,16 @@ android {
 
 }
 
+apply from: 'https://raw.githubusercontent.com/kostasdrakonakis/maven-upload/master/bintray.gradle'
+apply from: 'https://raw.githubusercontent.com/kostasdrakonakis/maven-upload/master/publications.gradle'
+
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.3.1'
-    compile 'com.github.markrileybot.heatshrink:heatshrink-java:0.1.1'
-    compile 'no.nordicsemi.android:ble:1.0.0'
-    testCompile 'junit:junit:4.12'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.github.markrileybot.heatshrink:heatshrink-java:0.1.1'
+    api 'no.nordicsemi.android:ble:1.2.0'
+    testImplementation 'junit:junit:4.12'
 }
-
-apply from: 'https://raw.githubusercontent.com/numetriclabz/jcenter/master/installv.gradle'
-apply from: 'https://raw.githubusercontent.com/numetriclabz/jcenter/master/bintrayv.gradle'
