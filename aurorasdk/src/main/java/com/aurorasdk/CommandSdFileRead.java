@@ -18,9 +18,8 @@ public class CommandSdFileRead extends Command {
 
     private String destination;
 
-    public CommandSdFileRead(String destination, CommandCompletionListener listener) {
+    public CommandSdFileRead(String destination) {
 
-        this.addCompletionListener(listener);
         this.destination = destination;
     }
 

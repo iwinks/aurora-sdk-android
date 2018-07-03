@@ -187,7 +187,8 @@ public class SDKExampleActivity extends AppCompatActivity {
 
     public void onReadFileClick(View v)
     {
-        queueCommand(new CommandSdFileRead("test.txt", null));
+        //queueCommand(new CommandSdFileRead("test.txt", null));
+        queueCommand(new CommandSdFileRead("sessions/2018-05-22@215852/session.txt"), null);
     }
 
     public void onLoadProfileClick(View v) {
