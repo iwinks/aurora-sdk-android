@@ -251,6 +251,13 @@ public class Aurora implements AuroraBleCallbacks {
     }
 
 
+    //TODO: remove this when firmware 2.X is deprecated
+    public void useIndicationsForCommandOutput(){
+
+        connectionManager.useIndicationsForCommandOutput();
+    }
+
+
     /* Helper methods
     ------------------------------------------------------------------------------------------------
     */

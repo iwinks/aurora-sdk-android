@@ -19,7 +19,7 @@ import no.nordicsemi.android.ble.Request;
 
 public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
-    private BluetoothGattCharacteristic commandStatusChar, commandDataChar, commandOutputChar, eventChar;
+    private BluetoothGattCharacteristic commandStatusChar, commandDataChar, commandOutputCharNotified, commandOutputCharIndicated, eventChar;
 
     private Queue<ByteBuffer> readBuffers;
 
@@ -49,8 +49,8 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             final LinkedList<Request> requests = new LinkedList<>();
             requests.push(Request.newEnableIndicationsRequest(commandStatusChar));
-            //requests.push(Request.newEnableNotificationsRequest(commandOutputChar));
-            requests.push(Request.newEnableIndicationsRequest(commandOutputChar));
+            requests.push(Request.newEnableNotificationsRequest(commandOutputCharNotified));
+            //requests.push(Request.newEnableIndicationsRequest(commandOutputCharIndicated));
             requests.push(Request.newEnableNotificationsRequest(eventChar));
 
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
@@ -70,8 +70,8 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             commandStatusChar = service.getCharacteristic(Constants.COMMAND_STATUS_UUID.getUuid());
             commandDataChar = service.getCharacteristic(Constants.COMMAND_DATA_UUID.getUuid());
-            //commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_NOTIFIED_UUID.getUuid());
-            commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid());
+            commandOutputCharNotified = service.getCharacteristic(Constants.COMMAND_OUTPUT_NOTIFIED_UUID.getUuid());
+            commandOutputCharIndicated = service.getCharacteristic(Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid());
             eventChar = service.getCharacteristic(Constants.EVENT_NOTIFIED_UUID.getUuid());
 
             return commandStatusChar != null && commandDataChar != null;
@@ -144,7 +144,7 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             byte[] charValue = characteristic.getValue();
 
-            if (characteristic == commandOutputChar){
+            if (characteristic == commandOutputCharNotified || characteristic == commandOutputCharIndicated){
 
                 mCallbacks.onCommandOutput(charValue);
             }
@@ -192,6 +192,15 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
         while ((b = readBuffers.poll()) != null){
 
             b.clear();
+        }
+    }
+
+    public void useIndicationsForCommandOutput(){
+
+        if (isConnected()){
+
+            disableNotifications(commandOutputCharNotified);
+            enableIndications(commandOutputCharIndicated);
         }
     }
 

@@ -130,13 +130,6 @@ public class SDKExampleActivity extends AppCompatActivity {
     public void onOsInfoClick(View v){
 
         queueCommand("os-info");
-       /* queueCommand("os-info");
-        queueCommand("os-info");
-        queueCommand("os-info");
-        queueCommand("os-info");
-        queueCommand("os-info");
-        queueCommand("os-info");
-        queueCommand("led-demo");*/
     }
 
     public void onWriteFileClick(View v) {
@@ -187,8 +180,8 @@ public class SDKExampleActivity extends AppCompatActivity {
 
     public void onReadFileClick(View v)
     {
-        //queueCommand(new CommandSdFileRead("test.txt", null));
-        queueCommand(new CommandSdFileRead("sessions/2018-05-22@215852/session.txt"));
+        //queueCommand(new CommandSdFileRead("test.txt"));
+        queueCommand(new CommandSdFileRead("sessions/2018-05-22@2158/session.txt"));
     }
 
     public void onLoadProfileClick(View v) {
@@ -241,6 +234,19 @@ public class SDKExampleActivity extends AppCompatActivity {
         else {
 
             showMsg("Aurora must be connected to disable events.");
+        }
+    }
+
+    public void onUseIndicationsClick(View v) {
+
+        if (aurora.isConnected()){
+
+            showMsg("Now using indications for command output.");
+            aurora.useIndicationsForCommandOutput();
+        }
+        else {
+
+            showMsg("Aurora must first be connected before switching to indications.");
         }
     }
 
