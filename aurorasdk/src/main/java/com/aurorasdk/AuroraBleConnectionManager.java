@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import no.nordicsemi.android.ble.BleManager;
@@ -47,8 +49,15 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             final LinkedList<Request> requests = new LinkedList<>();
             requests.push(Request.newEnableIndicationsRequest(commandStatusChar));
-            requests.push(Request.newEnableNotificationsRequest(commandOutputChar));
+            //requests.push(Request.newEnableNotificationsRequest(commandOutputChar));
+            requests.push(Request.newEnableIndicationsRequest(commandOutputChar));
             requests.push(Request.newEnableNotificationsRequest(eventChar));
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                Request.newConnectionPriorityRequest(BluetoothGatt.CONNECTION_PRIORITY_HIGH);
+            }
+
+
             return requests;
         }
 
@@ -61,7 +70,8 @@ public class AuroraBleConnectionManager extends BleManager<AuroraBleCallbacks> {
 
             commandStatusChar = service.getCharacteristic(Constants.COMMAND_STATUS_UUID.getUuid());
             commandDataChar = service.getCharacteristic(Constants.COMMAND_DATA_UUID.getUuid());
-            commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_NOTIFIED_UUID.getUuid());
+            //commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_NOTIFIED_UUID.getUuid());
+            commandOutputChar = service.getCharacteristic(Constants.COMMAND_OUTPUT_INDICATED_UUID.getUuid());
             eventChar = service.getCharacteristic(Constants.EVENT_NOTIFIED_UUID.getUuid());
 
             return commandStatusChar != null && commandDataChar != null;

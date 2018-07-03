@@ -3,7 +3,6 @@ package com.aurorasdk;
 import android.content.Context;
 import android.bluetooth.BluetoothDevice;
 
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -115,38 +114,6 @@ public class Aurora implements AuroraBleCallbacks {
 
             setConnectionState(reconnecting ? ConnectionState.RECONNECTING : ConnectionState.SCANNING);
         }
-
-
-        /*
-
-
-
-        if (connectionState == ConnectionState.IDLE || connectionState == ConnectionState.DISCONNECTED) {
-
-            scanResults.clear();
-
-            boolean reconnecting = (connectionState == ConnectionState.DISCONNECTED) && !explicitDisconnect;
-
-            setConnectionState(reconnecting ? ConnectionState.RECONNECTING : ConnectionState.SCANNING);
-
-
-            if (scanObservable == null) {
-
-                scanObservable = rxBleClient.scanBleDevices(
-                        new ScanSettings.Builder()
-                                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                                .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-                                .build(),
-                        new ScanFilter.Builder()
-                                .setServiceUuid(Constants.DREAMBAND_SERVICE_UUID)
-                                .build()
-                ).observeOn(AndroidSchedulers.mainThread());
-            }
-
-            scanSubscription = scanObservable.subscribe(this::onScanResult, this::onScanError);
-
-        }
-        */
     }
 
     public void startScan(){
@@ -165,13 +132,6 @@ public class Aurora implements AuroraBleCallbacks {
 
             setConnectionState(ConnectionState.IDLE);
         }
-
-        /*
-        if (scanSubscription != null && !scanSubscription.isUnsubscribed()) {
-
-            scanSubscription.unsubscribe();
-        }
-        */
     }
 
 
@@ -434,6 +394,7 @@ public class Aurora implements AuroraBleCallbacks {
 
     @Override
     public void onCommandOutput(byte[] data){
+
         commandProcessor.processCommandOutput(data);
     }
 

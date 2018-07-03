@@ -188,7 +188,7 @@ public class SDKExampleActivity extends AppCompatActivity {
     public void onReadFileClick(View v)
     {
         //queueCommand(new CommandSdFileRead("test.txt", null));
-        queueCommand(new CommandSdFileRead("sessions/2018-05-22@215852/session.txt"), null);
+        queueCommand(new CommandSdFileRead("sessions/2018-05-22@215852/session.txt"));
     }
 
     public void onLoadProfileClick(View v) {
@@ -203,7 +203,7 @@ public class SDKExampleActivity extends AppCompatActivity {
 
     public void onUpdateProfileClick(View v){
 
-        queueCommand(new CommandSdFileRead("profiles/default.prof", null), (readCmd) -> {
+        queueCommand(new CommandSdFileRead("profiles/default.prof"), (readCmd) -> {
 
             if (!readCmd.hasError()){
 

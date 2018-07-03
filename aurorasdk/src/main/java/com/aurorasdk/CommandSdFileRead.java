@@ -23,10 +23,13 @@ public class CommandSdFileRead extends Command {
         this.destination = destination;
     }
 
+
     @Override
     public void setResponseObject(Map<String, String> responseObject) throws Exception {
 
         super.setResponseObject(responseObject);
+
+        if (this.hasError()) return;
 
         try {
 

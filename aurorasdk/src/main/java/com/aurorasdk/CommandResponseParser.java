@@ -18,7 +18,7 @@ class CommandResponseParser {
     private final Map<String, String> responseObject = new HashMap<>();
     private final List<Map<String, String>> responseTable = new ArrayList<>();
     private final List<String> responseColumns = new ArrayList<>();
-    private final ByteArrayOutputStream responseOutput = new ByteArrayOutputStream(4096);
+    private final ByteArrayOutputStream responseOutput = new ByteArrayOutputStream(1024*256);
 
     private boolean isTable;
     private boolean hasOutput;

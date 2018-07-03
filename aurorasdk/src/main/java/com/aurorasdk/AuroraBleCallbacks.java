@@ -20,13 +20,13 @@ public interface AuroraBleCallbacks extends BleManagerCallbacks {
 
     default void onServicesDiscovered(final BluetoothDevice device, final boolean optionalServicesFound) {}
 
-    public void onCommandStatusChange(byte status, byte infoByte);
+    void onCommandStatusChange(byte status, byte infoByte);
 
-    public void onCommandOutput(byte[] data);
+    void onCommandOutput(byte[] data);
 
-    public void onCommandResponse(String responseLine);
+    void onCommandResponse(String responseLine);
 
-    public void onAuroraEvent(int eventId, long flags);
+    void onAuroraEvent(int eventId, long flags);
 
 
 
