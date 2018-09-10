@@ -12,8 +12,20 @@ public class UtilityTest {
     @Test
     public void getUnsignedInt32_isCorrect() {
         assertEquals(
-                419430400,
-                Utility.getUnsignedInt32(new byte[] {(byte)0, (byte)0, (byte)0, (byte)25}, 0));
+                25,
+                Utility.getUnsignedInt32(new byte[] {25 ,0, 0, 0}, 0));
+    }
+
+    @Test
+    public void getUnsignedInt32_isCorrectOffsetWork() {
+        assertEquals(
+                12,
+                Utility.getUnsignedInt32(new byte[] {0,0,0,12,0,0,0}, 3));
+    }
+
+    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    public void  getUnsignedInt32_IfOffsetSettingIsIncorrect() {
+        Utility.getUnsignedInt32(new byte[]{0,0,0,0}, 1);
     }
 
     @Test(expected = NullPointerException.class)
