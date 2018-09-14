@@ -1,10 +1,6 @@
 package com.aurorasdk;
 import org.junit.Test;
-import org.mockito.exceptions.base.MockitoException;
 
-import java.util.concurrent.Executor;
-
-import static org.junit.Assert.*;
 public class CommandTimeoutTest {
 
     @Test
