@@ -3,8 +3,11 @@ package com.aurorasdk;
 import android.content.Context;
 import android.bluetooth.BluetoothDevice;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 
 public class Aurora implements AuroraBleCallbacks {
@@ -24,6 +27,11 @@ public class Aurora implements AuroraBleCallbacks {
 
     public interface ScanListener{
         void onScanResultsChange(List<BluetoothDevice> scanResults);
+    }
+
+    public interface SessionsListListener {
+
+        void onSessionsListReady(List<String> sessions);
     }
 
     private ScanListener scanListener;
@@ -248,6 +256,58 @@ public class Aurora implements AuroraBleCallbacks {
         int mask = Event.eventTypesToMask(eventTypes);
 
         return queueCommand("event-output-disable " + mask + " 16");
+    }
+
+    public void getSessionsList(String filter, SessionsListListener listener){
+
+        final List<String> sessions = new ArrayList<String>();
+
+        queueCommand("sd-dir-read sessions 0 " + filter, (Command dirReadCmd) -> {
+
+            if (dirReadCmd.hasError() || !dirReadCmd.isTable()){
+
+                listener.onSessionsListReady(sessions);
+                return;
+            }
+
+            CountDownLatch countDownLatch = new CountDownLatch(dirReadCmd.getResponseTable().size());
+
+            for (Map<String, String> s : dirReadCmd.getResponseTable()){
+
+                if (s.containsKey("name")){
+
+                    String sessionName = s.get("name") + "/session.txt";
+
+                    queueCommand("sd-file-info " + sessionName, (Command cmd) -> {
+
+                        if (!cmd.hasError() && !cmd.isTable()){
+
+                            Long sessionSize = cmd.getResponseValueAsLong("size");
+
+                            if (sessionSize > 0 && sessionSize <= 256*1024){
+
+                                sessions.add(sessionName);
+                            }
+                        }
+
+                        countDownLatch.countDown();
+
+                        if (countDownLatch.getCount() == 0){
+                            listener.onSessionsListReady(sessions);
+                        }
+
+                    });
+                }
+                else {
+
+                    countDownLatch.countDown();
+
+                    if (countDownLatch.getCount() == 0){
+                        listener.onSessionsListReady(sessions);
+                    }
+                }
+            }
+        });
     }
 
 
