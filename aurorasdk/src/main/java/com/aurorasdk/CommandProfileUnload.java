@@ -9,6 +9,11 @@ import android.os.Looper;
 
 public class CommandProfileUnload extends Command {
 
+    public CommandProfileUnload(){
+
+        super("prof-unload");
+    }
+
     @Override
     protected void completeCommand() {
 
@@ -47,11 +52,4 @@ public class CommandProfileUnload extends Command {
 
         }, 5000);
     }
-
-    @Override
-    public String getCommandString() {
-
-        return "prof-unload";
-    }
-
 }

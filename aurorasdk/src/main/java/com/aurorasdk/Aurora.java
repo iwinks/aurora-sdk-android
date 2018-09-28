@@ -215,10 +215,7 @@ public class Aurora implements AuroraBleCallbacks {
 
     public Command queueCommand(String commandString, Command.CommandCompletionListener listener){
 
-        Command command = new Command();
-        command.setCommandString(commandString);
-
-        return queueCommand(command, listener);
+        return queueCommand(new Command(commandString), listener);
     }
 
     public Command queueCommand(Command command){

@@ -6,16 +6,8 @@ package com.aurorasdk;
 
 public class CommandProfileLoad extends Command {
 
-    private String profileName;
-
     public CommandProfileLoad(String profileName) {
 
-        this.profileName = profileName;
-    }
-
-    @Override
-    public String getCommandString() {
-
-        return "prof-load " + profileName;
+        super("prof-load " + profileName);
     }
 }
