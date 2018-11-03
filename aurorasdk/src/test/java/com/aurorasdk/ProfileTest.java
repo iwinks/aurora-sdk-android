@@ -46,6 +46,14 @@ public class ProfileTest {
     @Test
     public void toString_isCorrect() {
 
+        Profile profile = new Profile(testProfile);
+        assertEquals(testProfile, profile.toString());
     }
 
+    @Test
+    public void option_isCorrect() {
+
+        assertEquals("stim-delay", Profile.Option.STIM_DELAY.getOptionName());
+        assertNull(Profile.Option.getOption("test"));
+    }
 }
