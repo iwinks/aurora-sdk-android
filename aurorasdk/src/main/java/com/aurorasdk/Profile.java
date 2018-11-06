@@ -75,6 +75,7 @@ public class Profile {
     }
 
     public enum Option {
+
         STIM_DELAY("stim-delay"),
         STIM_INTERVAL("stim-interval"),
         STIM_ENABLED("stim-enabled"),

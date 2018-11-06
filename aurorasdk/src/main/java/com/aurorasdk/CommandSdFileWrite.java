@@ -65,13 +65,6 @@ public class CommandSdFileWrite extends Command {
         setInput();
     }
 
-    @Override
-    public String getCommandString() {
-
-        //the read timeout should be less than the command timeout
-        return "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 1500 1 " + crc;
-    }
-
     private void setInput(){
 
         try {
@@ -83,5 +76,11 @@ public class CommandSdFileWrite extends Command {
             setError(-9, exception.getMessage());
         }
 
+    }
+
+    @Override
+    public String getCommandString() {
+
+        return "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 1500 1 " + crc;
     }
 }

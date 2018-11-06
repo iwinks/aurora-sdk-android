@@ -36,6 +36,15 @@ public class Command {
 
     private boolean isTable;
 
+    public Command(){
+
+    }
+
+    public Command(String commandString){
+
+        setCommandString(commandString);
+    }
+
     public void setCommandString(String commandString){
 
         if (completed){

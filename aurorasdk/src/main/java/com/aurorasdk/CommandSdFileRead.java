@@ -16,13 +16,10 @@ import static com.aurorasdk.Constants.COMMAND_COMPRESSION_WINDOW_SIZE;
 
 public class CommandSdFileRead extends Command {
 
-    private String destination;
-
     public CommandSdFileRead(String destination) {
 
-        this.destination = destination;
+        super("sd-file-read " + destination + " / 1");
     }
-
 
     @Override
     public void setResponseObject(Map<String, String> responseObject) throws Exception {
@@ -46,12 +43,6 @@ public class CommandSdFileRead extends Command {
             e.printStackTrace();
         }
 
-    }
-
-    @Override
-    public String getCommandString() {
-
-        return "sd-file-read " + destination + " / 1";
     }
 
     private byte[] decompress(byte[] bytes){

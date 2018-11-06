@@ -67,7 +67,7 @@ class CommandResponseParser {
         Map<String, String> responseTableRow = new HashMap<>();
         for (int i = 0; i < values.length; i++){
 
-           responseTableRow.put(responseColumns.get(i), values[i]);
+           responseTableRow.put(Utility.getCamelCasedString(responseColumns.get(i)), values[i]);
         }
 
         responseTable.add(responseTableRow);
