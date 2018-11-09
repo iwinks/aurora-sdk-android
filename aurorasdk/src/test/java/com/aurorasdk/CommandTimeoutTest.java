@@ -10,12 +10,25 @@ public class CommandTimeoutTest {
     }
 
     @Test
-    public void run_isCorrectIfHandlerExist(){
-        CommandTimeout command = new CommandTimeout(new MockTimeOutHandler());
+    public void run_isCorrect() {
+        CommandTimeout command = new CommandTimeout(new MockTimeOutHandeler());
         command.run();
     }
 
-    public class MockTimeOutHandler  implements CommandTimeout.TimeoutHandler{
+    @Test
+    public void run_isCorrectIfErrorHandlerExist(){
+        CommandTimeout command = new CommandTimeout(new MockErrorTimeOutHandler());
+        command.run();
+    }
+
+    public class MockTimeOutHandeler implements CommandTimeout.TimeoutHandler{
+
+        @Override
+        public void onTimeout() {
+            return;
+        }
+    }
+    public class MockErrorTimeOutHandler implements CommandTimeout.TimeoutHandler{
 
         @Override
         public void onTimeout() {
