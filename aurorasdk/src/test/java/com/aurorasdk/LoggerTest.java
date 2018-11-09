@@ -27,7 +27,6 @@ import static org.mockito.Mockito.times;
         @Test
         public void isLogger_CanOuputWarningLog() {
             PowerMockito.mockStatic(android.util.Log.class);
-            PowerMockito.when(Log.w(Mockito.anyString(), Mockito.anyString())).thenThrow(Exception.class);
             Logger.w("WarningLogTest");
         }
 
