@@ -22,7 +22,7 @@ class CommandProcessor {
     private Queue<Command> commandQueue = new ConcurrentLinkedQueue<>();
     private Command currentCommand;
 
-    private final CommandResponseParser commandResponseParser = new CommandResponseParser();
+    private CommandResponseParser commandResponseParser = new CommandResponseParser();
 
     public interface CommandExecutor {
         void executeCommand(Command command);
@@ -48,6 +48,12 @@ class CommandProcessor {
         commandTimeout = new CommandTimeout(this::onCommandTimeout);
 
         reset();
+    }
+
+    CommandProcessor(CommandExecutor commandExecutor, CommandInputWriter commandInputWriter, CommandResponseParser parser){
+
+        this(commandExecutor, commandInputWriter);
+        this.commandResponseParser = parser;
     }
 
     void queueCommand(Command command){
