@@ -12,6 +12,10 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.IOException;
+
+import static org.mockito.ArgumentMatchers.any;
+
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({android.util.Log.class})
 public class CommandProcessorTest {
@@ -91,5 +95,28 @@ public class CommandProcessorTest {
         processor.setCommandState(CommandProcessor.CommandState.EXECUTE);
         processor.processCommandResponseLine("Col1|Col2");
     }
+
+    @Test
+    public void processCommandOutput_isCorrectWork() {
+        processor.queueCommand(new CommandTimeSync());
+        processor.processCommandOutput("data".getBytes());
+    }
+
+    @Test
+    public void processCommandOutput_IOException() throws IOException {
+
+        CommandResponseParser parser = PowerMockito.mock(CommandResponseParser.class);
+        PowerMockito.doThrow(new IOException()).when(parser).parseOutput(Mockito.any());
+
+        CommandProcessor localProc = new CommandProcessor(
+                PowerMockito.mock(CommandProcessor.CommandExecutor.class),
+                PowerMockito.mock(CommandProcessor.CommandInputWriter.class),
+                parser);
+        localProc.queueCommand((new CommandTimeSync()));
+        localProc.processCommandOutput(null);
+    }
+
+
+
 
 }
