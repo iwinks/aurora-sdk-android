@@ -65,7 +65,7 @@ public class CommandSdFileWrite extends Command {
         setInput();
     }
 
-    private void setInput(){
+    protected void setInput(){
 
         try {
             setInput(compressedInput.toByteArray());
