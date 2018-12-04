@@ -27,6 +27,12 @@ public class CommandSdFileWriteTest {
     }
 
     @Test
+    public void CommandSdFileWrite_ifOldFirmwareCrcCheckDiabled() {
+        CommandSdFileWrite constructor1 = new CommandSdFileWrite("testPath", "inputTestValue", true, 20207);
+        assertEquals("sd-file-write testPath / 1 1 1500 1 ", constructor1.getCommandString());
+    }
+
+    @Test
     public void CommandSdFileWrite_isCreateStreamFailed() throws Exception {
 
         HsOutputStream mockStream = PowerMockito.mock(HsOutputStream.class);

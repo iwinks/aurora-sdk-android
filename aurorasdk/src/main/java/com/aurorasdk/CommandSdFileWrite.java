@@ -20,6 +20,7 @@ public class CommandSdFileWrite extends Command {
     private long crc;
     private boolean renameIfExisting;
     private ByteArrayOutputStream compressedInput;
+    private long osVersion = 30000;
 
     public CommandSdFileWrite(String destination, String input, boolean renameIfExisting) {
 
@@ -49,6 +50,11 @@ public class CommandSdFileWrite extends Command {
     public CommandSdFileWrite(String destination, String input){
 
         this(destination, input, false);
+    }
+
+    public CommandSdFileWrite(String destination, String input, boolean renameIfExisting, long osVersion){
+        this(destination, input, renameIfExisting);
+        this.osVersion = osVersion;
     }
 
     @Override
@@ -81,6 +87,11 @@ public class CommandSdFileWrite extends Command {
     @Override
     public String getCommandString() {
 
-        return "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 1500 1 " + crc;
+        String commandString = "sd-file-write " + destination + " / " + (renameIfExisting ? "1" : "0") + " 1 1500 1 ";
+        if(osVersion < 30000) {
+            return commandString;
+        } else {
+            return commandString + crc;
+        }
     }
 }
