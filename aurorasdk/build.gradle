@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    buildToolsVersion '28.0.3'
 
     defaultConfig {
         minSdkVersion 21
@@ -41,4 +41,6 @@ dependencies {
     implementation 'com.github.markrileybot.heatshrink:heatshrink-java:0.1.1'
     api 'no.nordicsemi.android:ble:1.2.0'
     testImplementation 'junit:junit:4.12'
+    testImplementation 'org.powermock:powermock-module-junit4:1.7.4'
+    testImplementation 'org.powermock:powermock-api-mockito2:1.7.4'
 }

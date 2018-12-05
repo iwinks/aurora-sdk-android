@@ -81,7 +81,8 @@ public class Command {
 
         this.errorCode = errorCode;
 
-        if (!errorMessage.isEmpty()){
+        if (errorMessage != null
+            && !errorMessage.isEmpty()){
 
             this.errorMessage = errorMessage;
 
